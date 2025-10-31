@@ -1,0 +1,38 @@
+{
+  "@@locale": "es",
+  "appTitle": "Cat Alarm",
+  "soundLabel": "Sonido",
+  "usingSoundFile": "Usando soft.m4a",
+  "audioActiveBanner": "● Audio ACTIVO – Toca STOP para detener",
+  "selectTone": "Selecciona tono de alarma",
+  "soft": "Suave",
+  "standard": "Estándar",
+  "power": "Potente",
+  "am": "AM",
+  "pm": "PM",
+  "ampmToggle": "AM/PM",
+  "currentTimePrefix": "Hora actual: ",
+  "setButton": "Ajustar",
+  "alarmButton": "Alarma",
+  "stopButton": "Parar",
+  "offButton": "Apagado",
+  "testButton": "Prueba",
+  "audioTestTitle": "Prueba de Audio",
+  "testSoundButton": "Reproducir sonido de prueba",
+  "statusReady": "Listo",
+  "statusStarting": "Iniciando reproductor de audio...",
+  "statusPlaying": "El sonido se está reproduciendo.",
+  "statusErrorPrefix": "Error: ",
+  "statusPlayerStatePrefix": "Estado del reproductor: ",
+  "statusFinished": "Sonido finalizado.",
+  "statusPlayerErrorPrefix": "Error del reproductor: ",
+  "@appTitle": {
+    "description": "App title shown in the app bar"
+  },
+  "@soundLabel": {
+    "description": "Label for sound selection UI"
+  },
+  "@usingSoundFile": {
+    "description": "Short note indicating the active sound file"
+  }
+}
