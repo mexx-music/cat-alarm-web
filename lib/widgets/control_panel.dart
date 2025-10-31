@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../audio/cat_alarm_player.dart';
-import '../core/alarm_core.dart';
 
 class ControlPanel extends StatelessWidget {
   const ControlPanel({
@@ -8,23 +6,25 @@ class ControlPanel extends StatelessWidget {
     required this.hourText,
     required this.ampmText,
     required this.nowText,
+    required this.armed,
     required this.onToggleAmPm,
     required this.onArm,
     required this.onStop,
     required this.onTest,
-    this.armed = false,
-    this.isTesting = false,
+    required this.isTesting,
+    this.topContent,                // <<< NEU
   });
 
   final String hourText;   // z.B. "04:07"
   final String ampmText;   // "AM" / "PM"
   final String nowText;    // "Aktuelle Uhrzeit: 19:45:14"
+  final bool armed;
   final VoidCallback onToggleAmPm;
   final VoidCallback onArm;
   final VoidCallback onStop;
   final VoidCallback onTest;
-  final bool armed;
   final bool isTesting;
+  final Widget? topContent;         // <<< NEU
 
   @override
   Widget build(BuildContext context) {
@@ -50,18 +50,27 @@ class ControlPanel extends StatelessWidget {
                 ),
                 padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      hourText,
-                      style: const TextStyle(
-                        fontSize: 40,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        shadows: [
-                          Shadow(offset: Offset(0, 2), blurRadius: 4, color: Colors.black54),
-                        ],
-                      ),
+                    if (topContent != null) ...[
+                      topContent!,                 // <<< NEU
+                      const SizedBox(height: 8),
+                    ],
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          hourText,
+                          style: const TextStyle(
+                            fontSize: 40,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            shadows: [
+                              Shadow(offset: Offset(0, 2), blurRadius: 4, color: Colors.black54),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Row(
@@ -81,14 +90,19 @@ class ControlPanel extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      nowText,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        shadows: [Shadow(offset: Offset(0, 1), blurRadius: 2, color: Colors.black45)],
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          nowText,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            shadows: [Shadow(offset: Offset(0, 1), blurRadius: 2, color: Colors.black45)],
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 6),
                     Row(
@@ -102,20 +116,18 @@ class ControlPanel extends StatelessWidget {
                         ),
                         const SizedBox(width: 2), // reduziert
                         Expanded(
-                          child: ElevatedButton.icon(
+                          child: ElevatedButton(
                             onPressed: armed
                                 ? () {
                                     debugPrint('ControlPanel: Stop getappt -> onStop()');
                                     onStop.call(); // <- WICHTIG: zentrales Stop aus main.dart
                                   }
                                 : null, // disabled wenn nicht armed
-                            icon: const Icon(Icons.stop),
-                            label: Text(armed ? 'Stopp' : 'Aus'),
+                            child: Text(armed ? 'Stopp' : 'Aus'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: armed ? Colors.red : Colors.grey,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             ),
                           ),
                         ),

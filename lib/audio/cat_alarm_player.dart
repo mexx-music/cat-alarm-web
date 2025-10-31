@@ -1,131 +1,101 @@
 import 'dart:async';
-import 'dart:math';
-import 'package:just_audio/just_audio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:audio_session/audio_session.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/foundation.dart'; // Import für ValueNotifier
-import 'dart:io' show Platform;
+import 'package:just_audio/just_audio.dart' as ja;
 
 class CatAlarmPlayer {
-  CatAlarmPlayer({
-    String? purrAsset,
-    required this.miauAssets,
-    this.purrVolume = 0.28,
-    this.miauMaxVolume = 1.0,
-    this.fadeInDuration = const Duration(seconds: 25),
-    this.minGap = const Duration(seconds: 2),
-    this.maxGap = const Duration(seconds: 5),
-  }) : purrAsset = purrAsset ?? (Platform.isAndroid ? 'assets/sounds/catalarmsoft.mp3' : 'assets/sounds/soft.wav');
+  static final CatAlarmPlayer I = CatAlarmPlayer._();
+  CatAlarmPlayer._();
 
-  final String purrAsset;
-  final List<String> miauAssets;
-  final double purrVolume;
-  final double miauMaxVolume;
-  final Duration fadeInDuration;
-  final Duration minGap;
-  final Duration maxGap;
+  // Player
+  final ja.AudioPlayer ocean = ja.AudioPlayer();
+  final ja.AudioPlayer rain  = ja.AudioPlayer();
+  final ja.AudioPlayer purr  = ja.AudioPlayer();
+  final ja.AudioPlayer meow  = ja.AudioPlayer();
+  final ja.AudioPlayer alarm = ja.AudioPlayer(); // <<< NEU: dedizierter Alarm-Slot
 
-  final _purr = AudioPlayer();
-  final _miau = AudioPlayer();
-  final _rng = Random();
-  Timer? _scheduler;
-  bool _active = false;
-  double _fade = 0.0;
-
-  static final CatAlarmPlayer I = CatAlarmPlayer(
-    miauAssets: [
-      'assets/sounds/Miau1a.mp3',
-      'assets/sounds/Miau2a.mp3',
-      'assets/sounds/Miaub1.mp3',
-      'assets/sounds/Miaub2.mp3',
-      'assets/sounds/Miaub3.mp3',
-      'assets/sounds/Miaub4.mp3',
-      'assets/sounds/Miaub5.mp3',
-      'assets/sounds/Miaub6.mp3',
-    ],
-  );
+  /// UI-Status (für Banner/Buttons)
+  final ValueNotifier<bool> isActive = ValueNotifier<bool>(false);
 
   int _stopLatch = 0;
   int get stopLatch => _stopLatch;
   bool isObsolete(int latchAtStart) => latchAtStart != _stopLatch;
 
-  // ValueNotifier für den aktiven Status
-  final ValueNotifier<bool> isActive = ValueNotifier(false);
+  StreamSubscription<bool>? _playingSub;
+  StreamSubscription<ja.ProcessingState>? _stateSub;
 
-  // Initialisierungsmethode (optional, für Kompatibilität)
-  void init() {}
+  bool _armed = false;
 
-  // DisposeAll für Kompatibilität
-  void disposeAll() => dispose();
+  Future<void> init() async {
+    await _playingSub?.cancel();
+    await _stateSub?.cancel();
+    _playingSub = alarm.playingStream.listen((_) => _recalcActive());
+    _stateSub   = alarm.processingStateStream.listen((_) => _recalcActive());
+    _recalcActive();
+  }
 
-  // StartOcean für Kompatibilität
-  Future<void> startOcean() => start();
+  void _recalcActive() {
+    final active = alarm.playing;
+    if (isActive.value != active) isActive.value = active;
+  }
 
+  /// Startet den gewählten CatAlarm-Asset (Timer benutzt nur diese Methode!)
+  Future<void> playAlarmAsset(String assetPath, {bool loop = true, double volume = 1.0}) async {
+    try {
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration.music());
+      await session.setActive(true);
+    } catch (e) {
+      debugPrint('AudioSession activate error: $e');
+    }
+
+    try { await alarm.setLoopMode(loop ? ja.LoopMode.one : ja.LoopMode.off); } catch (_) {}
+    try { await alarm.stop(); } catch (_) {}
+    try { await alarm.seek(Duration.zero); } catch (_) {}
+    await alarm.setAsset(assetPath);
+    await alarm.setVolume(volume);
+    await alarm.play();
+
+    if (!isActive.value) isActive.value = true;
+    debugPrint('CatAlarmPlayer: Alarm gestartet -> $assetPath');
+  }
+
+  /// Stoppt wirklich den Timer-Sound
   Future<void> stopAll() async {
-    _stopLatch++; // wichtig: STOP-Generation erhöhen
-    await stop(); // Player stoppen + Session deaktivieren
+    _stopLatch++;
+
+    try { await alarm.setLoopMode(ja.LoopMode.off); } catch (_) {}
+    try { await alarm.stop(); } catch (_) {}
+    try { await alarm.seek(Duration.zero); } catch (_) {}
+
     try {
       final session = await AudioSession.instance;
       await session.setActive(false);
-    } catch (_) {}
-    isActive.value = false;
+    } catch (e) {
+      debugPrint('AudioSession deactivate error: $e');
+    }
+
+    _recalcActive();
+    debugPrint('CatAlarmPlayer: stopAll() -> isActive=[32m${isActive.value}[0m');
   }
 
-  Future<void> start() async {
-    if (_active) return;
-    _active = true;
-    _fade = 0.0;
+  Future<void> disposeAll() async {
+    await stopAll();
+    await _playingSub?.cancel();
+    await _stateSub?.cancel();
+    await alarm.dispose();
+  }
+
+  Future<void> startOcean() async {
+    _armed = true;
     final session = await AudioSession.instance;
+    await session.configure(const AudioSessionConfiguration.music());
     await session.setActive(true);
-    await _purr.setAsset(purrAsset);
-    _purr.setLoopMode(LoopMode.one);
-    _purr.setVolume(purrVolume);
-    await _purr.play();
-    await _miau.setAsset(miauAssets[_rng.nextInt(miauAssets.length)]);
-    _miau.setVolume(0.2);
-    await _miau.play();
-    _startFade();
-    _scheduleNext();
-    isActive.value = true;
-  }
 
-  void _startFade() {
-    final tick = const Duration(milliseconds: 200);
-    final steps = (fadeInDuration.inMilliseconds / tick.inMilliseconds).clamp(1, 9999).round();
-    int n = 0;
-    Timer.periodic(tick, (t) {
-      if (!_active) { t.cancel(); return; }
-      _fade = (++n / steps).clamp(0.0, 1.0);
-      if (_fade >= 1.0) t.cancel();
-    });
-  }
-
-  void _scheduleNext() {
-    if (!_active) return;
-    final gapMs = _rng.nextInt(maxGap.inMilliseconds - minGap.inMilliseconds + 1) + minGap.inMilliseconds;
-    _scheduler?.cancel();
-    _scheduler = Timer(Duration(milliseconds: gapMs), () async {
-      if (!_active) return;
-      final file = miauAssets[_rng.nextInt(miauAssets.length)];
-      await _miau.setAsset(file);
-      final vol = (0.15 + 0.85 * _fade).clamp(0.0, 1.0) * miauMaxVolume;
-      _miau.setVolume(vol);
-      await _miau.play();
-      _scheduleNext();
-    });
-  }
-
-  Future<void> stop() async {
-    _active = false;
-    _scheduler?.cancel();
-    await _miau.stop();
-    await _purr.stop();
-    isActive.value = false;
-  }
-
-  void dispose() {
-    _scheduler?.cancel();
-    _miau.dispose();
-    _purr.dispose();
+    await ocean.setLoopMode(ja.LoopMode.one);
+    await ocean.setAudioSource(ja.AudioSource.asset('assets/audio/ocean.ogg'));
+    await ocean.seek(Duration.zero);
+    await ocean.play();
+    // isActive wird jetzt automatisch true, sobald der Player spielt
   }
 }

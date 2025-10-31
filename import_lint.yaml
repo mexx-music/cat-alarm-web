@@ -1,0 +1,6 @@
+rules:
+  - name: ui_must_not_import_logic
+    source: lib/widgets/**
+    disallow:
+      - lib/audio/**
+      - lib/core/**

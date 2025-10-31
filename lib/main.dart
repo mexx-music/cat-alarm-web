@@ -11,6 +11,9 @@ import 'starfield.dart';
 import 'audio/cat_alarm_player.dart';
 import 'core/alarm_core.dart';
 
+// Auswahl-Enum
+enum AlarmMix { soft, standard, power }
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final session = await AudioSession.instance;
@@ -51,6 +54,24 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
   // NEU: verhindert Re-Arm/Trigger nach STOP
   bool _userStopped = false;
 
+  // State
+  AlarmMix _selectedMix = AlarmMix.standard;
+
+  // Helfer: Pfad für aktuellen Mix (plattformabhängig)
+  String _assetFor(AlarmMix m) {
+    final isApple = Platform.isMacOS || Platform.isIOS;
+    switch (m) {
+      case AlarmMix.soft:
+        return isApple ? 'assets/sounds/soft.m4a' : 'assets/sounds/catalarmsoft.mp3';
+      case AlarmMix.standard:
+        return isApple ? 'assets/sounds/catalarmstandard1.m4a' : 'assets/sounds/catalarmstandard.mp3';
+      case AlarmMix.power:
+        return isApple ? 'assets/sounds/catalarmpower1.m4a' : 'assets/sounds/catalarmpower.mp3';
+    }
+    // Fallback, falls Enum erweitert wird
+    return 'assets/sounds/catalarmstandard.mp3';
+  }
+
   Future<bool> _assetExists(String p) async {
     try {
       await rootBundle.load(p);
@@ -66,52 +87,8 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
   }
 
   Future<void> _showMixPicker() async {
-    final choice = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Weckruf testen'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.bedtime),
-              title: const Text('Sanft'),
-              onTap: () => Navigator.pop(ctx, 'soft'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.pets),
-              title: const Text('Standard'),
-              onTap: () => Navigator.pop(ctx, 'standard'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.flash_on),
-              title: const Text('Power'),
-              onTap: () => Navigator.pop(ctx, 'power'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Abbrechen')),
-        ],
-      ),
-    );
-
-    if (choice == null) return;
-
-    late String asset;
-    if (choice == 'soft') {
-      asset = (Platform.isMacOS || Platform.isIOS)
-          ? 'assets/sounds/soft.m4a'
-          : 'assets/sounds/catalarmsoft.mp3';
-    } else if (choice == 'standard') {
-      asset = (Platform.isMacOS || Platform.isIOS)
-          ? 'assets/sounds/catalarmstandard1.m4a'
-          : 'assets/sounds/catalarmstandard.mp3';
-    } else {
-      asset = (Platform.isMacOS || Platform.isIOS)
-          ? 'assets/sounds/catalarmpower1.m4a'
-          : 'assets/sounds/catalarmpower.mp3';
-    }
+    // Kein Dialog mehr – wir nehmen die aktuelle Auswahl _selectedMix:
+    final asset = _assetFor(_selectedMix);
 
     await _testPlayer.stop();
     await CatAlarmPlayer.I.stopAll(); // stoppt alle Alarm-Sounds
@@ -171,18 +148,22 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
 
   void _armFromHands() {
     setState(() {
-      _userStopped = false;  // NEU
-      _armed = true;
+      _userStopped = false;
       final now = DateTime.now();
-      _fireAt = DateTime(now.year, now.month, now.day, _hour, _minute);
+      var fire = DateTime(now.year, now.month, now.day, _hour, _minute);
+      if (!fire.isAfter(now)) {
+        fire = fire.add(const Duration(days: 1)); // wenn Zeit heute schon vorbei ist → morgen
+      }
+      _fireAt = fire;
+      _armed = true;
     });
   }
 
   Future<void> _triggerAlarm() async {
-    final latch = CatAlarmPlayer.I.stopLatch;   // Generation merken
-    // (optional async await-Ladevorgänge)
-    if (CatAlarmPlayer.I.isObsolete(latch)) return; // User hat inzwischen gestoppt
-    await CatAlarmPlayer.I.startOcean(); // oder was auch immer starten
+    final latch = CatAlarmPlayer.I.stopLatch;
+    final asset = _assetFor(_selectedMix); // soft/standard/power Pfad
+    if (CatAlarmPlayer.I.isObsolete(latch)) return;
+    await CatAlarmPlayer.I.playAlarmAsset(asset, loop: true);
   }
 
   void _trigger() {
@@ -202,7 +183,7 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
   void _handleStop() async {
     debugPrint('Stopp-Button wurde getappt');
     try {
-      await CatAlarmPlayer.I.stopAll();       // stoppt ALLES (Meer, Regen etc.)
+      await CatAlarmPlayer.I.stopAll();       // stoppt ALLES (Meer, Alarm, Test)
     } catch (e) {
       debugPrint('Fehler beim Stoppen: $e');
     }
@@ -249,7 +230,7 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
       body: LayoutBuilder(
         builder: (context, c) {
           // Höhe für das untere Bedienfeld
-          const double panelHeight = 220;
+          const double panelHeight = 300;
           const double padding = 16;
 
           // verfügbare Fläche
@@ -316,9 +297,9 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 720),
                         child: SizedBox(
-                          height: 220,
+                          height: 300,
                           child: Column(
-                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Expanded(
                                 child: ValueListenableBuilder<bool>(
@@ -329,14 +310,46 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
                                       hourText: '${_fmt2((_hour % 12 == 0 ? 12 : _hour % 12))}:${_fmt2(_minute)}',
                                       ampmText: _hour < 12 ? 'AM' : 'PM',
                                       nowText: 'Aktuelle Uhrzeit: ${_fmt2(_now.hour)}:${_fmt2(_now.minute)}:${_fmt2(_now.second)}',
-                                      armed: stopActive,              // ← Stop-Button aktiv
+                                      armed: stopActive,
                                       onToggleAmPm: () => setState(() {
                                         _hour = _hour < 12 ? (_hour + 12) % 24 : (_hour - 12) % 24;
                                       }),
                                       onArm: _armFromHands,
-                                      onStop: _handleStop,            // ← zentrale Stop-Logik
+                                      onStop: _handleStop,
                                       onTest: _showMixPicker,
                                       isTesting: _isTesting,
+                                      // NEU: Chips + Dateipfad IM Panel rendern
+                                      topContent: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text('Weckton auswählen', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              ChoiceChip(
+                                                label: const Text('Sanft'),
+                                                selected: _selectedMix == AlarmMix.soft,
+                                                onSelected: (_) => setState(() => _selectedMix = AlarmMix.soft),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              ChoiceChip(
+                                                label: const Text('Standard'),
+                                                selected: _selectedMix == AlarmMix.standard,
+                                                onSelected: (_) => setState(() => _selectedMix = AlarmMix.standard),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              ChoiceChip(
+                                                label: const Text('Power'),
+                                                selected: _selectedMix == AlarmMix.power,
+                                                onSelected: (_) => setState(() => _selectedMix = AlarmMix.power),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 6),
+                                          // Entfernt: Text zur aktuellen Auswahl und Datei
+                                        ],
+                                      ),
                                     );
                                   },
                                 ),
