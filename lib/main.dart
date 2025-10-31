@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:math';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
 import 'widgets/clock_view.dart';
@@ -10,6 +8,7 @@ import 'widgets/control_panel.dart';
 import 'starfield.dart';
 import 'audio/cat_alarm_player.dart';
 import 'core/alarm_core.dart';
+import 'l10n/app_localizations.dart';
 
 // Auswahl-Enum
 enum AlarmMix { soft, standard, power }
@@ -28,7 +27,42 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Cat Alarm',
+      // Title is generated from localized resources so it updates with locale.
+      onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
+      // Localization wiring: delegates, supported locales and a resolution callback
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: const <Locale>[
+        Locale('de'),
+        Locale('en'),
+        Locale('es'),
+        Locale('zh', 'CN'),
+      ],
+      localeResolutionCallback: (Locale? locale, Iterable<Locale> supportedLocales) {
+        // If no locale provided, fallback to first supported
+        if (locale == null) return supportedLocales.first;
+
+        // Exact match (language + country)
+        for (final supported in supportedLocales) {
+          if (supported.languageCode == locale.languageCode &&
+              (supported.countryCode == locale.countryCode)) {
+            return supported;
+          }
+        }
+
+        // Handle Chinese variants: prefer zh_CN when countryCode is CN
+        if (locale.languageCode == 'zh') {
+          if (locale.countryCode == 'CN') return const Locale('zh', 'CN');
+          return const Locale('zh');
+        }
+
+        // Fallback to language-only match
+        for (final supported in supportedLocales) {
+          if (supported.languageCode == locale.languageCode) return supported;
+        }
+
+        // Final fallback
+        return supportedLocales.first;
+      },
       debugShowCheckedModeBanner: false,
       home: const CatAlarmScreen(),
     );
@@ -67,23 +101,10 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
         return isApple ? 'assets/sounds/catalarmstandard1.m4a' : 'assets/sounds/catalarmstandard.mp3';
       case AlarmMix.power:
         return isApple ? 'assets/sounds/catalarmpower1.m4a' : 'assets/sounds/catalarmpower.mp3';
+      default:
+        // defensive fallback in case enum is extended in the future
+        return 'assets/sounds/catalarmstandard.mp3';
     }
-    // Fallback, falls Enum erweitert wird
-    return 'assets/sounds/catalarmstandard.mp3';
-  }
-
-  Future<bool> _assetExists(String p) async {
-    try {
-      await rootBundle.load(p);
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  Future<String> _pickAsset({required String mp3, required String m4a}) async {
-    if (Theme.of(context).platform == TargetPlatform.android) return mp3;
-    return await _assetExists(m4a) ? m4a : mp3;
   }
 
   Future<void> _showMixPicker() async {
@@ -170,16 +191,6 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
     _triggerAlarm();
   }
 
-  void _toggleAmPm() {
-    setState(() {
-      if (_hour < 12) {
-        _hour += 12;
-      } else {
-        _hour -= 12;
-      }
-    });
-  }
-
   void _handleStop() async {
     debugPrint('Stopp-Button wurde getappt');
     try {
@@ -209,47 +220,23 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
     print('Alle Player gestoppt & entwaffnet');
   }
 
-  Future<void> _stopAlarm() async {
-    await Future.wait([
-      CatAlarmPlayer.I.stopAll(),
-      _testPlayer.stop(),
-      _testPlayer.setLoopMode(LoopMode.off),
-    ]);
-    setState(() {
-      _userStopped = true;
-      _armed = false;
-      _fireAt = null;
-      _isTesting = false;
-    });
-    print('Alle Player gestoppt & entwaffnet');
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: LayoutBuilder(
         builder: (context, c) {
-          // Höhe für das untere Bedienfeld
-          const double panelHeight = 300;
-          const double padding = 16;
-
-          // verfügbare Fläche
-          final double minClockSize = 80;
-          final double usableW = c.maxWidth - padding * 2;
-          final double maxClockH = max(minClockSize, c.maxHeight - panelHeight - padding * 3);
-          final double clockSize = min(usableW, maxClockH);
-
           return SizedBox.expand(
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Positioned.fill(child: Starfield()),
+                const Positioned.fill(child: Starfield()),
                 // Status-Banner oben im Stack
                 ValueListenableBuilder<bool>(
                   valueListenable: CatAlarmPlayer.I.isActive,
                   builder: (context, playerActive, _) {
                     final active = playerActive || _isTesting; // NEU
                     if (!active) return const SizedBox.shrink();
+                    final loc = AppLocalizations.of(context)!;
                     return Align(
                       alignment: Alignment.topCenter,
                       child: SafeArea(
@@ -257,12 +244,12 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
                           margin: const EdgeInsets.all(12),
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE53935).withOpacity(0.95),
+                            color: const Color(0xFFE53935).withAlpha((0.95 * 255).round()),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: const Text(
-                            '● Audio AKTIV – Tippe STOP zum Beenden',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                          child: Text(
+                            loc.audioActiveBanner,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
                           ),
                         ),
                       ),
@@ -306,10 +293,11 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
                                   valueListenable: CatAlarmPlayer.I.isActive,
                                   builder: (context, playerActive, _) {
                                     final bool stopActive = playerActive || _isTesting || _armed;
+                                    final loc = AppLocalizations.of(context)!;
                                     return ControlPanel(
                                       hourText: '${_fmt2((_hour % 12 == 0 ? 12 : _hour % 12))}:${_fmt2(_minute)}',
                                       ampmText: _hour < 12 ? 'AM' : 'PM',
-                                      nowText: 'Aktuelle Uhrzeit: ${_fmt2(_now.hour)}:${_fmt2(_now.minute)}:${_fmt2(_now.second)}',
+                                      nowText: '${loc.currentTimePrefix}${_fmt2(_now.hour)}:${_fmt2(_now.minute)}:${_fmt2(_now.second)}',
                                       armed: stopActive,
                                       onToggleAmPm: () => setState(() {
                                         _hour = _hour < 12 ? (_hour + 12) % 24 : (_hour - 12) % 24;
@@ -322,25 +310,25 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
                                       topContent: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          const Text('Weckton auswählen', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
+                                          Text(loc.selectTone, style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white)),
                                           const SizedBox(height: 8),
                                           Row(
                                             mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
                                               ChoiceChip(
-                                                label: const Text('Sanft'),
+                                                label: Text(loc.soft),
                                                 selected: _selectedMix == AlarmMix.soft,
                                                 onSelected: (_) => setState(() => _selectedMix = AlarmMix.soft),
                                               ),
                                               const SizedBox(width: 8),
                                               ChoiceChip(
-                                                label: const Text('Standard'),
+                                                label: Text(loc.standard),
                                                 selected: _selectedMix == AlarmMix.standard,
                                                 onSelected: (_) => setState(() => _selectedMix = AlarmMix.standard),
                                               ),
                                               const SizedBox(width: 8),
                                               ChoiceChip(
-                                                label: const Text('Power'),
+                                                label: Text(loc.power),
                                                 selected: _selectedMix == AlarmMix.power,
                                                 onSelected: (_) => setState(() => _selectedMix = AlarmMix.power),
                                               ),

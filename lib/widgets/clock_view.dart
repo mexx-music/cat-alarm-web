@@ -1,7 +1,6 @@
 // lib/widgets/clock_view.dart
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'starfield.dart'; // liegt im selben Ordner
 
 class ClockView extends StatefulWidget {
   final int hour;
@@ -38,7 +37,7 @@ class _ClockViewState extends State<ClockView> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Positioned.fill(child: ColoredBox(color: Colors.black.withOpacity(0.25))),
+            Positioned.fill(child: ColoredBox(color: const Color(0xFF000000).withAlpha((0.25 * 255).round()))),
             Center(
               child: CustomPaint(
                 size: Size.square(size),
@@ -57,21 +56,13 @@ class _ClockViewState extends State<ClockView> {
   // === Drag-Logik (wie in deiner funktionierenden Version) ===
   void _onPanStart(DragStartDetails d, Offset center, double radius) {
     final local = d.localPosition - center;
-    final touchAngle =
-        ((math.atan2(local.dy, local.dx) - math.pi / 2) + 2 * math.pi) %
-            (2 * math.pi);
+    final touchAngle = ((math.atan2(local.dy, local.dx) - math.pi / 2) + 2 * math.pi) % (2 * math.pi);
 
     final mAng = (widget.minute / 60 * 2 * math.pi) % (2 * math.pi);
-    final hAng =
-        (((widget.hour % 12) + widget.minute / 60) * 2 * math.pi / 12) %
-            (2 * math.pi);
+    final hAng = (((widget.hour % 12) + widget.minute / 60) * 2 * math.pi / 12) % (2 * math.pi);
 
-    final mTip = center +
-        Offset(math.cos(mAng - math.pi / 2), math.sin(mAng - math.pi / 2)) *
-            (radius * 0.78);
-    final hTip = center +
-        Offset(math.cos(hAng - math.pi / 2), math.sin(hAng - math.pi / 2)) *
-            (radius * 0.58);
+    final mTip = center + Offset(math.cos(mAng - math.pi / 2), math.sin(mAng - math.pi / 2)) * (radius * 0.78);
+    final hTip = center + Offset(math.cos(hAng - math.pi / 2), math.sin(hAng - math.pi / 2)) * (radius * 0.58);
     const mHit = 56.0;
     const hHit = 64.0;
 
@@ -91,9 +82,7 @@ class _ClockViewState extends State<ClockView> {
 
   void _onPanUpdate(DragUpdateDetails d, Offset center, double radius) {
     final local = d.localPosition - center;
-    var touchAngle =
-        ((math.atan2(local.dy, local.dx) - math.pi / 2) + 2 * math.pi) %
-            (2 * math.pi);
+    final touchAngle = ((math.atan2(local.dy, local.dx) - math.pi / 2) + 2 * math.pi) % (2 * math.pi);
 
     int newHour = widget.hour;
     int newMinute = widget.minute;
@@ -113,11 +102,11 @@ class _ClockViewState extends State<ClockView> {
       final angle = (touchAngle + _dragOffsetHour!) % (2 * math.pi);
       final norm = angle % (2 * math.pi);
       final h = ((norm / (2 * math.pi)) * 12).round() % 12;
-      int hh = h == 0 ? 12 : h;
+      final int hh = h == 0 ? 12 : h;
       if (newHour >= 12) {
         newHour = (hh % 12) + 12; // PM beibehalten
       } else {
-        newHour = hh % 12;        // AM beibehalten
+        newHour = hh % 12; // AM beibehalten
       }
     }
 
@@ -144,11 +133,11 @@ class _ClockPainter extends CustomPainter {
     final r = size.width / 2;
 
     // Zifferblatt
-    final face = Paint()..color = Colors.black.withOpacity(0.15);
+    final face = Paint()..color = const Color(0xFF000000).withAlpha((0.15 * 255).round());
     final ring = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 8
-      ..color = Colors.white.withOpacity(0.85);
+      ..color = const Color(0xFFFFFFFF).withAlpha((0.85 * 255).round());
 
     canvas.drawCircle(center, r, face);
     canvas.drawCircle(center, r, ring);
@@ -159,10 +148,10 @@ class _ClockPainter extends CustomPainter {
     final tp = TextPainter(textAlign: TextAlign.center, textDirection: TextDirection.ltr);
 
     for (int i = 0; i < 60; i++) {
-      final ang = -math.pi/2 + i*2*math.pi/60;
-      final inner = center + Offset(math.cos(ang), math.sin(ang)) * (r - (i%5==0?22:12));
+      final ang = -math.pi / 2 + i * 2 * math.pi / 60;
+      final inner = center + Offset(math.cos(ang), math.sin(ang)) * (r - (i % 5 == 0 ? 22 : 12));
       final outer = center + Offset(math.cos(ang), math.sin(ang)) * r;
-      canvas.drawLine(inner, outer, i%5==0 ? tick5 : tick);
+      canvas.drawLine(inner, outer, i % 5 == 0 ? tick5 : tick);
 
       if (i % 5 == 0) {
         final num = (i ~/ 5 == 0) ? 12 : i ~/ 5;
@@ -176,7 +165,7 @@ class _ClockPainter extends CustomPainter {
           ),
         );
         tp.layout();
-        tp.paint(canvas, pos - Offset(tp.width/2, tp.height/2));
+        tp.paint(canvas, pos - Offset(tp.width / 2, tp.height / 2));
       }
     }
 
@@ -190,14 +179,13 @@ class _ClockPainter extends CustomPainter {
     _drawCatHand(canvas, center, r * 0.58, angHour, width: 11, faded: false);
 
     // Nabe
-    canvas.drawCircle(center, 11, Paint()..color = Colors.black.withOpacity(0.9));
-    canvas.drawCircle(center, 5, Paint()..color = Colors.white);
+    canvas.drawCircle(center, 11, Paint()..color = const Color(0xFF000000).withAlpha((0.9 * 255).round()));
+    canvas.drawCircle(center, 5, Paint()..color = const Color(0xFFFFFFFF));
   }
 
-  void _drawCatHand(Canvas c, Offset ctr, double len, double ang,
-      {required double width, required bool faded}) {
+  void _drawCatHand(Canvas c, Offset ctr, double len, double ang, {required double width, required bool faded}) {
     final shaft = Paint()
-      ..color = Colors.white.withOpacity(faded ? 0.6 : 0.95)
+      ..color = const Color(0xFFFFFFFF).withAlpha(((faded ? 0.6 : 0.95) * 255).round())
       ..strokeWidth = width
       ..strokeCap = StrokeCap.round;
 
@@ -205,16 +193,10 @@ class _ClockPainter extends CustomPainter {
     c.drawLine(ctr, tip, shaft);
 
     // Katzenkopf-Emoji an der Spitze
-    final tp = TextPainter(
-      text: TextSpan(
-        text: '🐱',
-        style: TextStyle(fontSize: 44, color: Colors.white.withOpacity(faded ? 0.6 : 1)),
-      ),
-      textAlign: TextAlign.center,
-      textDirection: TextDirection.ltr,
-    );
-    tp.layout();
-    tp.paint(c, tip - Offset(tp.width / 2, tp.height / 2));
+    final emojiStyle = TextStyle(fontSize: 44, color: const Color(0xFFFFFFFF).withAlpha(((faded ? 0.6 : 1.0) * 255).round()));
+    final tp2 = TextPainter(text: TextSpan(text: '🐱', style: emojiStyle), textAlign: TextAlign.center, textDirection: TextDirection.ltr);
+    tp2.layout();
+    tp2.paint(c, tip - Offset(tp2.width / 2, tp2.height / 2));
   }
 
   @override

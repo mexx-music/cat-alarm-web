@@ -15,7 +15,7 @@ class AudioSmoke {
     Future<bool> exists(String p) async {
       try { await rootBundle.load(p); return true; } catch (_) { return false; }
     }
-    final miau = 'assets/sounds/Miau1a.mp3';
+    const miau = 'assets/sounds/Miau1a.mp3';
     final purr = Platform.isAndroid ? 'assets/sounds/catalarmsoft.mp3' : 'assets/sounds/soft.wav';
 
     print('SMOKE: exists($miau) = ${await exists(miau)}');

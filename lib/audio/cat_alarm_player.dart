@@ -24,8 +24,6 @@ class CatAlarmPlayer {
   StreamSubscription<bool>? _playingSub;
   StreamSubscription<ja.ProcessingState>? _stateSub;
 
-  bool _armed = false;
-
   Future<void> init() async {
     await _playingSub?.cancel();
     await _stateSub?.cancel();
@@ -87,7 +85,6 @@ class CatAlarmPlayer {
   }
 
   Future<void> startOcean() async {
-    _armed = true;
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
     await session.setActive(true);

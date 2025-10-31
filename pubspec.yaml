@@ -1,4 +1,7 @@
 name: cat_alarm
+description: A new Flutter project.
+publish_to: 'none'
+version: 0.0.1
 
 environment:
   sdk: ">=2.17.0 <3.0.0"
@@ -8,10 +11,14 @@ dependencies:
     sdk: flutter
   just_audio: ^0.9.39
   audio_session: ^0.1.16
+  audioplayers: any
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^2.0.1
   import_lint: ^1.0.1   # <-- statt ^2.0.0
 
 flutter:
@@ -19,3 +26,4 @@ flutter:
   assets:
     - assets/images/
     - assets/sounds/
+  generate: true

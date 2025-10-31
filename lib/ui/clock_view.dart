@@ -27,7 +27,7 @@ class ClockView extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               onPanUpdate: (d) {
                 final local = d.localPosition - center;
-                var ang = ((math.atan2(local.dy, local.dx) - math.pi / 2) + 2 * math.pi) % (2 * math.pi);
+                final ang = ((math.atan2(local.dy, local.dx) - math.pi / 2) + 2 * math.pi) % (2 * math.pi);
                 final m = ((ang / (2 * math.pi)) * 60).round() % 60;
                 final h = ((ang / (2 * math.pi)) * 12).round() % 12;
                 onTimeChanged(h, m);
@@ -59,7 +59,7 @@ class _ClockPainter extends CustomPainter {
     final ring = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 8
-      ..color = Colors.white.withOpacity(0.8);
+      ..color = const Color(0xFFFFFFFF).withAlpha((0.8 * 255).round());
     canvas.drawCircle(center, r, ring);
 
     // Zahlen

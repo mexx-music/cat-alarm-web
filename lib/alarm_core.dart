@@ -44,7 +44,6 @@ class AlarmCore {
     isArmed.value = false;
     final latched = CatAlarmPlayer.I.stopLatch;   // Latch capturen
     // sofort „unscharf“ machen, bevor Audio startet:
-    final fireAt = _fireAt;
     _fireAt = null;
     _tick?.cancel(); _tick = null;
 
@@ -63,4 +62,3 @@ class AlarmCore {
     disarm();
   }
 }
-

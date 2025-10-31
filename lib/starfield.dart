@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class Starfield extends StatefulWidget {
@@ -52,7 +51,8 @@ class _StarfieldState extends State<Starfield> with TickerProviderStateMixin {
         dy: rng.nextDouble(),
         radius: rng.nextDouble() * 0.8 + 0.3, // kleinere Punkte
         twinklePhase: rng.nextDouble(),
-        color: Colors.white.withOpacity(0.8 + rng.nextDouble() * 0.2),
+        // use withAlpha to avoid deprecated withOpacity
+        color: const Color(0xFFFFFFFF).withAlpha(((0.8 + rng.nextDouble() * 0.2) * 255).round()),
       );
     });
   }
@@ -98,7 +98,8 @@ class _StarfieldPainter extends CustomPainter {
     for (final s in stars) {
       final phase = (t + s.twinklePhase) % 1.0;
       final brightness = 0.6 + 0.4 * sin(phase * 2 * pi);
-      paint.color = s.color.withOpacity(brightness);
+      // set alpha according to brightness (preserve base color hue)
+      paint.color = s.color.withAlpha((brightness * 255).round());
       canvas.drawCircle(
         Offset(s.dx * size.width, s.dy * size.height),
         s.radius,
@@ -118,4 +119,3 @@ class _StarfieldPainter extends CustomPainter {
 ///     ...weitere Widgets...
 ///   ],
 /// )
-

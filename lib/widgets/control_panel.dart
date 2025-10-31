@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 class ControlPanel extends StatelessWidget {
   const ControlPanel({
@@ -28,8 +29,9 @@ class ControlPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return SingleChildScrollView(
-      padding: EdgeInsets.zero,
+      padding: const EdgeInsets.all(0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.end,
@@ -40,7 +42,7 @@ class ControlPanel extends StatelessWidget {
               borderRadius: BorderRadius.circular(18),
               child: Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF232323).withOpacity(0.82),
+                  color: const Color(0xFF232323).withAlpha( (0.82 * 255).round() ),
                   boxShadow: const [BoxShadow(blurRadius: 18, offset: Offset(0, 6), color: Colors.black26)],
                   image: const DecorationImage(
                     image: AssetImage('assets/images/paw_shapes.png'),
@@ -77,7 +79,8 @@ class ControlPanel extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          ampmText,
+                          // Use localized AM/PM if available; parent still supplies formatted ampmText
+                          ampmText == 'AM' ? loc.am : (ampmText == 'PM' ? loc.pm : ampmText),
                           style: const TextStyle(
                             fontSize: 22,
                             color: Colors.white,
@@ -86,7 +89,7 @@ class ControlPanel extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        _pillButton(label: 'AM/PM', onTap: onToggleAmPm),
+                        _pillButton(label: loc.ampmToggle, onTap: onToggleAmPm),
                       ],
                     ),
                     const SizedBox(height: 6),
@@ -110,7 +113,7 @@ class ControlPanel extends StatelessWidget {
                         Expanded(
                           child: _beigeButton(
                             icon: Icons.pets,
-                            label: armed ? 'Alarm' : 'Stellen',
+                            label: armed ? loc.alarmButton : loc.setButton,
                             onTap: onArm,
                           ),
                         ),
@@ -123,18 +126,18 @@ class ControlPanel extends StatelessWidget {
                                     onStop.call(); // <- WICHTIG: zentrales Stop aus main.dart
                                   }
                                 : null, // disabled wenn nicht armed
-                            child: Text(armed ? 'Stopp' : 'Aus'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: armed ? Colors.red : Colors.grey,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             ),
+                            child: Text(armed ? loc.stopButton : loc.offButton),
                           ),
                         ),
                         const SizedBox(width: 2), // reduziert
                         Expanded(
                           child: _ghostButton(
-                            label: 'Test',
+                            label: loc.testButton,
                             color: const Color(0xFFF3A547),
                             onTap: onTest,
                           ),
@@ -159,9 +162,9 @@ class ControlPanel extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: onTap,
-        child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4), // kompakter
-          child: Text('AM/PM', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4), // kompakter
+          child: Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
         ),
       ),
     );

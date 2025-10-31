@@ -22,7 +22,6 @@ class CatAlarmPlayer {
   StreamSubscription? _positionSub;
   final List<StreamSubscription> _stateSubs = [];
   late final List<ja.AudioPlayer> _players = [alarm, ocean, rain, purr, meow]; // <<< geändert
-  bool _armed = false;
 
   // CatAlarmPlayer: zusätzliche Guards
   int _stopLatch = 0;
@@ -64,7 +63,6 @@ class CatAlarmPlayer {
 
   // Beispiel-Start (nutze deine eigenen Startmethoden – wichtig ist nur: _armed setzen)
   Future<void> startOcean() async {
-    _armed = true;
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
     await session.setActive(true);
@@ -77,7 +75,6 @@ class CatAlarmPlayer {
   }
 
   Future<void> startRain() async {
-    _armed = true;
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
     await session.setActive(true);
@@ -89,7 +86,6 @@ class CatAlarmPlayer {
   }
 
   Future<void> startPurr() async {
-    _armed = true;
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
     await session.setActive(true);
@@ -101,7 +97,6 @@ class CatAlarmPlayer {
   }
 
   Future<void> startMeow() async {
-    _armed = true;
     final session = await AudioSession.instance;
     await session.configure(const AudioSessionConfiguration.music());
     await session.setActive(true);
@@ -114,7 +109,6 @@ class CatAlarmPlayer {
 
   // universelle Startmethode NUR für den Timer/Alarm:
   Future<void> playAlarmAsset(String assetPath, {bool loop = true}) async {
-    _armed = true;
     try {
       final session = await AudioSession.instance;
       await session.configure(const AudioSessionConfiguration.music());
@@ -123,10 +117,8 @@ class CatAlarmPlayer {
 
     // immer den gleichen Slot verwenden -> stopAll() erwischt ihn sicher
     try { await alarm.stop(); } catch (_) {}
-    try { await alarm.seek(Duration.zero); } catch (_) {}
-    try { await alarm.setLoopMode(loop ? ja.LoopMode.one : ja.LoopMode.off); } catch (_) {}
-    try { await alarm.setAudioSource(null); } catch (_) {}
-
+    // note: don't set a null AudioSource (API requires non-null). Remaining cleanup will stop/seek the player.
+    await alarm.setLoopMode(loop ? ja.LoopMode.one : ja.LoopMode.off);
     await alarm.setAudioSource(ja.AudioSource.asset(assetPath));
     await alarm.play();
 
@@ -136,7 +128,6 @@ class CatAlarmPlayer {
 
   Future<void> stopAll() async {
     _stopLatch++;
-    _armed = false;
     _autoplayTimer?.cancel(); _autoplayTimer = null;
     await _positionSub?.cancel(); _positionSub = null;
 
@@ -155,9 +146,6 @@ class CatAlarmPlayer {
       } catch (e) {
         debugPrint('Fehler beim Stoppen des Players: \x1B[31m$e\x1B[0m');
       }
-      try {
-        await p.setAudioSource(null); // <<< optionaler Reset
-      } catch (_) {}
       try {
         await p.seek(Duration.zero);
       } catch (e) {
