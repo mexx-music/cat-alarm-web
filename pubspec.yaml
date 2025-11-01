@@ -1,7 +1,7 @@
 name: cat_alarm
 description: A new Flutter project.
 publish_to: 'none'
-version: 0.0.1
+version: 1.0.1+2
 
 environment:
   sdk: ">=2.17.0 <3.0.0"
@@ -11,7 +11,7 @@ dependencies:
     sdk: flutter
   just_audio: ^0.9.39
   audio_session: ^0.1.16
-  audioplayers: any
+  audioplayers: ^6.0.0
   flutter_localizations:
     sdk: flutter
 
