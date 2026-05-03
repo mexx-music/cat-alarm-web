@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import '../utils/asset_resolver.dart';
 import '../utils/time_formatters.dart';
+import '../utils/web_audio_unlock.dart';
 import '../widgets/audio_active_banner.dart';
 import '../widgets/clock_view.dart';
 import '../widgets/control_panel.dart';
@@ -36,6 +37,7 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
   AlarmMix _selectedMix = AlarmMix.standard;
 
   Future<void> _showMixPicker() async {
+    await unlockAudio(); // web: aktiviert AudioContext beim ersten Klick
     // Kein Dialog mehr – wir nehmen die aktuelle Auswahl _selectedMix:
     final asset = assetForAlarmMix(_selectedMix);
 
@@ -96,6 +98,7 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
   }
 
   void _armFromHands() {
+    unlockAudio(); // web: aktiviert AudioContext beim ersten Klick (fire-and-forget)
     setState(() {
       _userStopped = false;
       final now = DateTime.now();
