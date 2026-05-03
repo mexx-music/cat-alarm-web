@@ -86,25 +86,12 @@ class ControlPanel extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          // Use localized AM/PM if available; parent still supplies formatted ampmText
-                          ampmText == 'AM'
+                        _pillButton(
+                          label: ampmText == 'AM'
                               ? loc.am
                               : (ampmText == 'PM' ? loc.pm : ampmText),
-                          style: const TextStyle(
-                            fontSize: 22,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            shadows: [
-                              Shadow(
-                                  offset: Offset(0, 1),
-                                  blurRadius: 2,
-                                  color: Colors.black45)
-                            ],
-                          ),
+                          onTap: onToggleAmPm,
                         ),
-                        const SizedBox(width: 12),
-                        _pillButton(label: loc.ampmToggle, onTap: onToggleAmPm),
                       ],
                     ),
                     const SizedBox(height: 8),

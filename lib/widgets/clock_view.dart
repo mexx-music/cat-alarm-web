@@ -82,30 +82,22 @@ class _ClockViewState extends State<ClockView> {
   }
 
   Widget _buildAlarmTimeOverlay() {
-    final h = widget.hour % 12 == 0 ? 12 : widget.hour % 12;
+    final h = widget.hour.toString().padLeft(2, '0');
     final m = widget.minute.toString().padLeft(2, '0');
-    final ampm = widget.hour < 12 ? 'AM' : 'PM';
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          '${h.toString().padLeft(2, '0')}:$m',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            shadows: [Shadow(offset: Offset(0, 2), blurRadius: 4, color: Colors.black54)],
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF000000).withAlpha(195),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        '$h:$m',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 28,
+          fontWeight: FontWeight.w800,
         ),
-        Text(
-          ampm,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -255,10 +247,16 @@ class _ClockPainter extends CustomPainter {
     final angHour =
         -math.pi / 2 + ((hour % 12) * 2 * math.pi / 12);
 
-    // Minutenzeiger (lang, halbtransparent)
-    _drawCatHand(canvas, center, r * 0.78, angMin, width: 3, faded: true, innerLen: r * 0.25);
-    // Stundenzeiger (kurz, normal)
-    _drawCatHand(canvas, center, r * 0.78, angHour, width: 5, faded: false, innerLen: r * 0.25);
+    // Minutenzeiger (cyan, Pfote)
+    _drawCatHand(canvas, center, r * 0.78, angMin,
+        width: 3, faded: true, innerLen: r * 0.25,
+        markerColor: const Color(0xFF0097A7).withAlpha(210),
+        emoji: '🐾', emojiSize: 26);
+    // Stundenzeiger (gold, Katze)
+    _drawCatHand(canvas, center, r * 0.78, angHour,
+        width: 5, faded: false, innerLen: r * 0.25,
+        markerColor: const Color(0xFFFFB300).withAlpha(230),
+        emoji: '🐱', emojiSize: 34);
 
     // Nabe
     canvas.drawCircle(
@@ -270,7 +268,12 @@ class _ClockPainter extends CustomPainter {
   }
 
   void _drawCatHand(Canvas c, Offset ctr, double len, double ang,
-      {required double width, required bool faded, double innerLen = 0.0}) {
+      {required double width,
+       required bool faded,
+       double innerLen = 0.0,
+       required Color markerColor,
+       required String emoji,
+       required double emojiSize}) {
     final shaft = Paint()
       ..color = const Color(0xFFFFFFFF)
           .withAlpha(((faded ? 0.6 : 0.95) * 255).round())
@@ -282,13 +285,20 @@ class _ClockPainter extends CustomPainter {
     final tip = ctr + dir * len;
     c.drawLine(start, tip, shaft);
 
-    // Katzenkopf-Emoji an der Spitze
-    final emojiStyle = TextStyle(
-        fontSize: 44,
-        color: const Color(0xFFFFFFFF)
-            .withAlpha(((faded ? 0.6 : 1.0) * 255).round()));
+    // Farbiger Kreis als Hintergrund
+    final circleR = emojiSize * 0.58;
+    c.drawCircle(tip, circleR, Paint()..color = markerColor);
+    c.drawCircle(
+      tip, circleR,
+      Paint()
+        ..color = Colors.white.withAlpha(80)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+
+    // Emoji
     final tp2 = TextPainter(
-        text: TextSpan(text: '🐱', style: emojiStyle),
+        text: TextSpan(text: emoji, style: TextStyle(fontSize: emojiSize)),
         textAlign: TextAlign.center,
         textDirection: TextDirection.ltr);
     tp2.layout();
