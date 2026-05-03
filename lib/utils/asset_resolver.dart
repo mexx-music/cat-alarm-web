@@ -1,8 +1,11 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
 import '../widgets/mix_selector.dart';
 
 String assetForAlarmMix(AlarmMix mix) {
-  final isApple = Platform.isMacOS || Platform.isIOS;
+  // dart:io Platform is unavailable on web — use kIsWeb + defaultTargetPlatform
+  final isApple = !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.macOS ||
+          defaultTargetPlatform == TargetPlatform.iOS);
   switch (mix) {
     case AlarmMix.soft:
       return isApple
