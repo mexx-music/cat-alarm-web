@@ -1,4 +1,5 @@
 // lib/widgets/clock_view.dart
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
@@ -24,6 +25,14 @@ class _ClockViewState extends State<ClockView> {
   bool _dragHour = false, _dragMinute = false;
   double? _dragOffsetMinute, _dragOffsetHour;
   int? _prevMinute;
+  bool _showAlarmTime = false;
+  Timer? _revertTimer;
+
+  @override
+  void dispose() {
+    _revertTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,21 +61,52 @@ class _ClockViewState extends State<ClockView> {
                 ),
               ),
             ),
-            if (widget.now != null)
-              Align(
-                alignment: Alignment.center,
-                child: SizedBox(
-                  width: 80,
-                  height: 80,
-                  child: CustomPaint(
-                    painter: _MiniClockPainter(widget.now!),
-                  ),
-                ),
-              ),
+            Align(
+              alignment: Alignment.center,
+              child: _showAlarmTime
+                  ? _buildAlarmTimeOverlay()
+                  : widget.now != null
+                      ? SizedBox(
+                          width: 80,
+                          height: 80,
+                          child: CustomPaint(
+                            painter: _MiniClockPainter(widget.now!),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+            ),
           ],
         ),
       );
     });
+  }
+
+  Widget _buildAlarmTimeOverlay() {
+    final h = widget.hour % 12 == 0 ? 12 : widget.hour % 12;
+    final m = widget.minute.toString().padLeft(2, '0');
+    final ampm = widget.hour < 12 ? 'AM' : 'PM';
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '${h.toString().padLeft(2, '0')}:$m',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            shadows: [Shadow(offset: Offset(0, 2), blurRadius: 4, color: Colors.black54)],
+          ),
+        ),
+        Text(
+          ampm,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
   }
 
   // === Drag-Logik (wie in deiner funktionierenden Version) ===
@@ -78,29 +118,33 @@ class _ClockViewState extends State<ClockView> {
 
     final mAng = (widget.minute / 60 * 2 * math.pi) % (2 * math.pi);
     final hAng =
-        (((widget.hour % 12) + widget.minute / 60) * 2 * math.pi / 12) %
-            (2 * math.pi);
+        ((widget.hour % 12) * 2 * math.pi / 12) % (2 * math.pi);
 
     final mTip = center +
         Offset(math.cos(mAng - math.pi / 2), math.sin(mAng - math.pi / 2)) *
             (radius * 0.78);
     final hTip = center +
         Offset(math.cos(hAng - math.pi / 2), math.sin(hAng - math.pi / 2)) *
-            (radius * 0.58);
+            (radius * 0.78);
     const mHit = 56.0;
     const hHit = 64.0;
 
     final dm = (d.localPosition - mTip).distance;
     final dh = (d.localPosition - hTip).distance;
 
-    _dragMinute = dm <= mHit && dm <= dh;
-    _dragHour = !_dragMinute && dh <= hHit;
+    _dragHour = dh <= hHit && dh <= dm;
+    _dragMinute = !_dragHour && dm <= mHit;
 
     if (_dragMinute) {
       _dragOffsetMinute = (mAng - touchAngle) % (2 * math.pi);
       _prevMinute = widget.minute;
     } else if (_dragHour) {
       _dragOffsetHour = (hAng - touchAngle) % (2 * math.pi);
+    }
+
+    if (_dragMinute || _dragHour) {
+      _revertTimer?.cancel();
+      setState(() => _showAlarmTime = true);
     }
   }
 
@@ -146,6 +190,10 @@ class _ClockViewState extends State<ClockView> {
     _dragOffsetMinute = null;
     _dragOffsetHour = null;
     _prevMinute = null;
+    _revertTimer?.cancel();
+    _revertTimer = Timer(const Duration(milliseconds: 1500), () {
+      if (mounted) setState(() => _showAlarmTime = false);
+    });
   }
 }
 
@@ -205,12 +253,12 @@ class _ClockPainter extends CustomPainter {
     // Winkel
     final angMin = -math.pi / 2 + (minute * 2 * math.pi / 60);
     final angHour =
-        -math.pi / 2 + (((hour % 12) + minute / 60) * 2 * math.pi / 12);
+        -math.pi / 2 + ((hour % 12) * 2 * math.pi / 12);
 
     // Minutenzeiger (lang, halbtransparent)
     _drawCatHand(canvas, center, r * 0.78, angMin, width: 3, faded: true, innerLen: r * 0.25);
     // Stundenzeiger (kurz, normal)
-    _drawCatHand(canvas, center, r * 0.58, angHour, width: 5, faded: false, innerLen: r * 0.25);
+    _drawCatHand(canvas, center, r * 0.78, angHour, width: 5, faded: false, innerLen: r * 0.25);
 
     // Nabe
     canvas.drawCircle(
