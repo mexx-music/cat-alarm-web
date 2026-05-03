@@ -26,10 +26,12 @@ class AlarmCore {
     _armed = false;
     _fireAt = null;
     isArmed.value = false;
-    _tick?.cancel(); _tick = null;
+    _tick?.cancel();
+    _tick = null;
   }
 
-  void onUserStop() {              // vom STOP-Button aufrufen!
+  void onUserStop() {
+    // vom STOP-Button aufrufen!
     _userStopped = true;
     disarm();
   }
@@ -43,9 +45,11 @@ class AlarmCore {
     // *** nur EINMAL auslösen ***
     _armed = false;
     isArmed.value = false;
-    final latched = CatAlarmPlayer.I.stopLatch;  // Generation merken
-    _tick?.cancel(); _tick = null;
-    final fireAt = _fireAt; _fireAt = null;
+    final latched = CatAlarmPlayer.I.stopLatch; // Generation merken
+    _tick?.cancel();
+    _tick = null;
+    final fireAt = _fireAt;
+    _fireAt = null;
 
     debugPrint('ALARM ausgelöst! fireAt=$fireAt');
 
@@ -55,4 +59,3 @@ class AlarmCore {
     await CatAlarmPlayer.I.startOcean();
   }
 }
-

@@ -33,7 +33,7 @@ android {
     signingConfigs {
         create("release") {
             if (keystorePropertiesFile.exists()) {
-                // Use values from key.properties; values are strings like /Users/..../upload-keystore.jks
+                // Use values from key.properties; values are strings like /Users/.../upload-keystore.jks
                 storeFile = file(keystoreProperties.getProperty("storeFile"))
                 storePassword = keystoreProperties.getProperty("storePassword")
                 keyAlias = keystoreProperties.getProperty("keyAlias")
@@ -47,17 +47,31 @@ android {
         applicationId = "com.mexx.catalarm"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        // Explicit versioning for Play release
-        versionCode = 1
-        versionName = "1.0.0"
+
+        // >>> Versionsnummern automatisch aus pubspec.yaml übernehmen
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
     }
 
     buildTypes {
         release {
-            // If a real release signing config is available, use it. Otherwise fall back to debug signing (existing behavior).
-            signingConfig = if (signingConfigs.findByName("release") != null) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
+            // Use real release keystore if available, otherwise fall back to debug signing
+            signingConfig = if (signingConfigs.findByName("release") != null)
+                signingConfigs.getByName("release")
+            else
+                signingConfigs.getByName("debug")
+
             isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            isShrinkResources = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        debug {
+            // Ensure debug build does not attempt resource shrinking
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

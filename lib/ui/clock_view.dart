@@ -27,7 +27,9 @@ class ClockView extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               onPanUpdate: (d) {
                 final local = d.localPosition - center;
-                final ang = ((math.atan2(local.dy, local.dx) - math.pi / 2) + 2 * math.pi) % (2 * math.pi);
+                final ang = ((math.atan2(local.dy, local.dx) - math.pi / 2) +
+                        2 * math.pi) %
+                    (2 * math.pi);
                 final m = ((ang / (2 * math.pi)) * 60).round() % 60;
                 final h = ((ang / (2 * math.pi)) * 12).round() % 12;
                 onTimeChanged(h, m);
@@ -63,13 +65,15 @@ class _ClockPainter extends CustomPainter {
     canvas.drawCircle(center, r, ring);
 
     // Zahlen
-    final tp = TextPainter(textAlign: TextAlign.center, textDirection: TextDirection.ltr);
+    final tp = TextPainter(
+        textAlign: TextAlign.center, textDirection: TextDirection.ltr);
     for (int i = 1; i <= 12; i++) {
       final ang = -math.pi / 2 + (i * 2 * math.pi / 12);
       final pos = center + Offset(math.cos(ang), math.sin(ang)) * (r - 40);
       tp.text = TextSpan(
         text: '$i',
-        style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+            color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
       );
       tp.layout();
       tp.paint(canvas, pos - Offset(tp.width / 2, tp.height / 2));
@@ -77,12 +81,14 @@ class _ClockPainter extends CustomPainter {
 
     // Zeiger
     final angMin = -math.pi / 2 + (minute * 2 * math.pi / 60);
-    final angHour = -math.pi / 2 + (((hour % 12) + minute / 60) * 2 * math.pi / 12);
+    final angHour =
+        -math.pi / 2 + (((hour % 12) + minute / 60) * 2 * math.pi / 12);
     _drawHand(canvas, center, r * 0.78, angMin, 6, Colors.white70);
     _drawHand(canvas, center, r * 0.55, angHour, 8, Colors.white);
   }
 
-  void _drawHand(Canvas c, Offset ctr, double len, double ang, double width, Color color) {
+  void _drawHand(
+      Canvas c, Offset ctr, double len, double ang, double width, Color color) {
     final paint = Paint()
       ..color = color
       ..strokeWidth = width

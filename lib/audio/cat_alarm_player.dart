@@ -9,10 +9,11 @@ class CatAlarmPlayer {
 
   // Player
   final ja.AudioPlayer ocean = ja.AudioPlayer();
-  final ja.AudioPlayer rain  = ja.AudioPlayer();
-  final ja.AudioPlayer purr  = ja.AudioPlayer();
-  final ja.AudioPlayer meow  = ja.AudioPlayer();
-  final ja.AudioPlayer alarm = ja.AudioPlayer(); // <<< NEU: dedizierter Alarm-Slot
+  final ja.AudioPlayer rain = ja.AudioPlayer();
+  final ja.AudioPlayer purr = ja.AudioPlayer();
+  final ja.AudioPlayer meow = ja.AudioPlayer();
+  final ja.AudioPlayer alarm =
+      ja.AudioPlayer(); // <<< NEU: dedizierter Alarm-Slot
 
   /// UI-Status (für Banner/Buttons)
   final ValueNotifier<bool> isActive = ValueNotifier<bool>(false);
@@ -28,7 +29,7 @@ class CatAlarmPlayer {
     await _playingSub?.cancel();
     await _stateSub?.cancel();
     _playingSub = alarm.playingStream.listen((_) => _recalcActive());
-    _stateSub   = alarm.processingStateStream.listen((_) => _recalcActive());
+    _stateSub = alarm.processingStateStream.listen((_) => _recalcActive());
     _recalcActive();
   }
 
@@ -38,7 +39,8 @@ class CatAlarmPlayer {
   }
 
   /// Startet den gewählten CatAlarm-Asset (Timer benutzt nur diese Methode!)
-  Future<void> playAlarmAsset(String assetPath, {bool loop = true, double volume = 1.0}) async {
+  Future<void> playAlarmAsset(String assetPath,
+      {bool loop = true, double volume = 1.0}) async {
     try {
       final session = await AudioSession.instance;
       await session.configure(const AudioSessionConfiguration.music());
@@ -47,9 +49,15 @@ class CatAlarmPlayer {
       debugPrint('AudioSession activate error: $e');
     }
 
-    try { await alarm.setLoopMode(loop ? ja.LoopMode.one : ja.LoopMode.off); } catch (_) {}
-    try { await alarm.stop(); } catch (_) {}
-    try { await alarm.seek(Duration.zero); } catch (_) {}
+    try {
+      await alarm.setLoopMode(loop ? ja.LoopMode.one : ja.LoopMode.off);
+    } catch (_) {}
+    try {
+      await alarm.stop();
+    } catch (_) {}
+    try {
+      await alarm.seek(Duration.zero);
+    } catch (_) {}
     await alarm.setAsset(assetPath);
     await alarm.setVolume(volume);
     await alarm.play();
@@ -62,9 +70,15 @@ class CatAlarmPlayer {
   Future<void> stopAll() async {
     _stopLatch++;
 
-    try { await alarm.setLoopMode(ja.LoopMode.off); } catch (_) {}
-    try { await alarm.stop(); } catch (_) {}
-    try { await alarm.seek(Duration.zero); } catch (_) {}
+    try {
+      await alarm.setLoopMode(ja.LoopMode.off);
+    } catch (_) {}
+    try {
+      await alarm.stop();
+    } catch (_) {}
+    try {
+      await alarm.seek(Duration.zero);
+    } catch (_) {}
 
     try {
       final session = await AudioSession.instance;
@@ -74,7 +88,8 @@ class CatAlarmPlayer {
     }
 
     _recalcActive();
-    debugPrint('CatAlarmPlayer: stopAll() -> isActive=[32m${isActive.value}[0m');
+    debugPrint(
+        'CatAlarmPlayer: stopAll() -> isActive=[32m${isActive.value}[0m');
   }
 
   Future<void> disposeAll() async {

@@ -9,10 +9,11 @@ class CatAlarmPlayer {
 
   // Player
   final ja.AudioPlayer ocean = ja.AudioPlayer();
-  final ja.AudioPlayer rain  = ja.AudioPlayer();
-  final ja.AudioPlayer purr  = ja.AudioPlayer();
-  final ja.AudioPlayer meow  = ja.AudioPlayer();
-  final ja.AudioPlayer alarm = ja.AudioPlayer(); // <<< NEU: dedizierter Alarm-Slot
+  final ja.AudioPlayer rain = ja.AudioPlayer();
+  final ja.AudioPlayer purr = ja.AudioPlayer();
+  final ja.AudioPlayer meow = ja.AudioPlayer();
+  final ja.AudioPlayer alarm =
+      ja.AudioPlayer(); // <<< NEU: dedizierter Alarm-Slot
 
   // UI-Status
   final ValueNotifier<bool> isActive = ValueNotifier<bool>(false);
@@ -21,7 +22,13 @@ class CatAlarmPlayer {
   Timer? _autoplayTimer;
   StreamSubscription? _positionSub;
   final List<StreamSubscription> _stateSubs = [];
-  late final List<ja.AudioPlayer> _players = [alarm, ocean, rain, purr, meow]; // <<< geändert
+  late final List<ja.AudioPlayer> _players = [
+    alarm,
+    ocean,
+    rain,
+    purr,
+    meow
+  ]; // <<< geändert
 
   // CatAlarmPlayer: zusätzliche Guards
   int _stopLatch = 0;
@@ -30,7 +37,9 @@ class CatAlarmPlayer {
   // --- NEU: Aktiv-Status automatisch aus den Player-Zuständen ableiten ---
   void _wireActivityTracking() {
     // alle alten Subs weg
-    for (final s in _stateSubs) { s.cancel(); }
+    for (final s in _stateSubs) {
+      s.cancel();
+    }
     _stateSubs.clear();
 
     // Auf playingStream/processingStateStream hören
@@ -116,7 +125,9 @@ class CatAlarmPlayer {
     } catch (_) {}
 
     // immer den gleichen Slot verwenden -> stopAll() erwischt ihn sicher
-    try { await alarm.stop(); } catch (_) {}
+    try {
+      await alarm.stop();
+    } catch (_) {}
     // note: don't set a null AudioSource (API requires non-null). Remaining cleanup will stop/seek the player.
     await alarm.setLoopMode(loop ? ja.LoopMode.one : ja.LoopMode.off);
     await alarm.setAudioSource(ja.AudioSource.asset(assetPath));
@@ -128,8 +139,10 @@ class CatAlarmPlayer {
 
   Future<void> stopAll() async {
     _stopLatch++;
-    _autoplayTimer?.cancel(); _autoplayTimer = null;
-    await _positionSub?.cancel(); _positionSub = null;
+    _autoplayTimer?.cancel();
+    _autoplayTimer = null;
+    await _positionSub?.cancel();
+    _positionSub = null;
 
     // Debug-Ausgabe
     debugPrint('CatAlarmPlayer: stopAll() aufgerufen');
@@ -157,10 +170,12 @@ class CatAlarmPlayer {
       final session = await AudioSession.instance;
       await session.setActive(false);
     } catch (e) {
-      debugPrint('Fehler beim Deaktivieren der AudioSession: \x1B[31m$e\x1B[0m');
+      debugPrint(
+          'Fehler beim Deaktivieren der AudioSession: \x1B[31m$e\x1B[0m');
     }
     _recalcActive();
-    debugPrint('CatAlarmPlayer: stopAll() beendet, isActive = [32m${isActive.value}[0m');
+    debugPrint(
+        'CatAlarmPlayer: stopAll() beendet, isActive = [32m${isActive.value}[0m');
   }
 
   // Hilfsprüfer: wurde seit Start ein Stop gedrückt?
@@ -168,7 +183,9 @@ class CatAlarmPlayer {
 
   Future<void> disposeAll() async {
     await stopAll();
-    for (final s in _stateSubs) { s.cancel(); }
+    for (final s in _stateSubs) {
+      s.cancel();
+    }
     _stateSubs.clear();
     await Future.wait(_players.map((p) => p.dispose()));
   }

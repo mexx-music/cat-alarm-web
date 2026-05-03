@@ -14,7 +14,10 @@ class AudioTestApp extends StatelessWidget {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        appBar: AppBar(title: Builder(builder: (c) => Text(AppLocalizations.of(c)?.audioTestTitle ?? 'Audio Test'))),
+        appBar: AppBar(
+            title: Builder(
+                builder: (c) => Text(
+                    AppLocalizations.of(c)?.audioTestTitle ?? 'Audio Test'))),
         body: const Center(child: AudioTestButton()),
       ),
     );
@@ -33,27 +36,49 @@ class _AudioTestButtonState extends State<AudioTestButton> {
   String status = 'Bereit';
 
   Future<bool> _exists(String assetPath) async {
-    try { await rootBundle.load(assetPath); return true; }
-    catch (_) { return false; }
+    try {
+      await rootBundle.load(assetPath);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> playTest() async {
-    setState(() { status = AppLocalizations.of(context)?.statusStarting ?? 'Starting audio player...'; });
+    setState(() {
+      status = AppLocalizations.of(context)?.statusStarting ??
+          'Starting audio player...';
+    });
     print('Check assets:');
     print('soft.m4a exists? ${await _exists("assets/sounds/soft.m4a")}');
     print('Miau1a.mp3 exists? ${await _exists("assets/sounds/Miau1a.mp3")}');
-    print('catalarmsoft.mp3 exists? ${await _exists("assets/sounds/catalarmsoft.mp3")}');
+    print(
+        'catalarmsoft.mp3 exists? ${await _exists("assets/sounds/catalarmsoft.mp3")}');
     try {
       await player.play(AssetSource('sounds/Miau1a.mp3'), volume: 1.0);
-      setState(() { status = AppLocalizations.of(context)?.statusPlaying ?? 'Sound is playing.'; });
+      setState(() {
+        status =
+            AppLocalizations.of(context)?.statusPlaying ?? 'Sound is playing.';
+      });
     } catch (e) {
-      setState(() { status = (AppLocalizations.of(context)?.statusErrorPrefix ?? 'Error: ') + e.toString(); });
+      setState(() {
+        status =
+            (AppLocalizations.of(context)?.statusErrorPrefix ?? 'Error: ') +
+                e.toString();
+      });
     }
     player.onPlayerStateChanged.listen((state) {
-      setState(() { status = (AppLocalizations.of(context)?.statusPlayerStatePrefix ?? 'PlayerState: ') + state.toString(); });
+      setState(() {
+        status = (AppLocalizations.of(context)?.statusPlayerStatePrefix ??
+                'PlayerState: ') +
+            state.toString();
+      });
     });
     player.onPlayerComplete.listen((event) {
-      setState(() { status = AppLocalizations.of(context)?.statusFinished ?? 'Sound finished.'; });
+      setState(() {
+        status =
+            AppLocalizations.of(context)?.statusFinished ?? 'Sound finished.';
+      });
     });
     // audioplayers v6: onPlayerError stream is not available on all platforms/versions.
     // Keep error handling inside catch blocks and state-change listeners.
@@ -66,7 +91,9 @@ class _AudioTestButtonState extends State<AudioTestButton> {
       children: [
         ElevatedButton(
           onPressed: playTest,
-          child: Builder(builder: (c) => Text(AppLocalizations.of(c)?.testSoundButton ?? 'Play test sound')),
+          child: Builder(
+              builder: (c) => Text(AppLocalizations.of(c)?.testSoundButton ??
+                  'Play test sound')),
         ),
         const SizedBox(height: 20),
         Text(status),

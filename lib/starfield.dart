@@ -37,7 +37,8 @@ class _StarfieldState extends State<Starfield> with TickerProviderStateMixin {
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, _) => CustomPaint(
-          painter: _StarfieldPainter(_stars, _controller.value, widget.backgroundBrightness),
+          painter: _StarfieldPainter(
+              _stars, _controller.value, widget.backgroundBrightness),
         ),
       ),
     );
@@ -52,7 +53,8 @@ class _StarfieldState extends State<Starfield> with TickerProviderStateMixin {
         radius: rng.nextDouble() * 0.8 + 0.3, // kleinere Punkte
         twinklePhase: rng.nextDouble(),
         // use withAlpha to avoid deprecated withOpacity
-        color: const Color(0xFFFFFFFF).withAlpha(((0.8 + rng.nextDouble() * 0.2) * 255).round()),
+        color: const Color(0xFFFFFFFF)
+            .withAlpha(((0.8 + rng.nextDouble() * 0.2) * 255).round()),
       );
     });
   }
@@ -85,8 +87,10 @@ class _StarfieldPainter extends CustomPainter {
     final bg = Paint()
       ..shader = RadialGradient(
         colors: [
-          Color.lerp(const Color(0xFF040507), Colors.white, backgroundBrightness)!,
-          Color.lerp(const Color(0xFF0B0E12), Colors.white, backgroundBrightness * 0.7)!,
+          Color.lerp(
+              const Color(0xFF040507), Colors.white, backgroundBrightness)!,
+          Color.lerp(const Color(0xFF0B0E12), Colors.white,
+              backgroundBrightness * 0.7)!,
         ],
         radius: 1.2,
         center: Alignment.topCenter,
