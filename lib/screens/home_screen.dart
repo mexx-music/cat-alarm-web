@@ -13,7 +13,6 @@ import '../widgets/wakelock_manager.dart';
 import '../starfield.dart';
 import '../audio/cat_alarm_player.dart';
 import '../core/alarm_core.dart';
-import '../l10n/app_localizations.dart';
 
 class CatAlarmScreen extends StatefulWidget {
   const CatAlarmScreen({super.key});
@@ -180,6 +179,7 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
                             child: ClockView(
                               hour: _hour,
                               minute: _minute,
+                              now: _now,
                               onTimeChanged: (h, m) {
                                 setState(() {
                                   _hour = h;
@@ -209,12 +209,9 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
                                   builder: (context, playerActive, _) {
                                     final bool stopActive =
                                         playerActive || _isTesting || _armed;
-                                    final loc = AppLocalizations.of(context)!;
                                     return ControlPanel(
                                       hourText: formatHour12(_hour, _minute),
                                       ampmText: amPm(_hour),
-                                      nowText:
-                                          '${loc.currentTimePrefix}${fmt2(_now.hour)}:${fmt2(_now.minute)}:${fmt2(_now.second)}',
                                       armed: stopActive,
                                       onToggleAmPm: () => setState(() {
                                         _hour = _hour < 12

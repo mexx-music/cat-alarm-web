@@ -6,7 +6,6 @@ class ControlPanel extends StatelessWidget {
     super.key,
     required this.hourText,
     required this.ampmText,
-    required this.nowText,
     required this.armed,
     required this.onToggleAmPm,
     required this.onArm,
@@ -18,7 +17,6 @@ class ControlPanel extends StatelessWidget {
 
   final String hourText; // z.B. "04:07"
   final String ampmText; // "AM" / "PM"
-  final String nowText; // "Aktuelle Uhrzeit: 19:45:14"
   final bool armed;
   final VoidCallback onToggleAmPm;
   final VoidCallback onArm;
@@ -109,66 +107,38 @@ class ControlPanel extends StatelessWidget {
                         _pillButton(label: loc.ampmToggle, onTap: onToggleAmPm),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          nowText,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            shadows: [
-                              Shadow(
-                                  offset: Offset(0, 1),
-                                  blurRadius: 2,
-                                  color: Colors.black45)
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _beigeButton(
-                            icon: Icons.pets,
-                            label: armed ? loc.alarmButton : loc.setButton,
-                            onTap: onArm,
-                          ),
-                        ),
-                        const SizedBox(width: 2), // reduziert
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: armed
-                                ? () {
-                                    debugPrint(
-                                        'ControlPanel: Stop getappt -> onStop()');
-                                    onStop
-                                        .call(); // <- WICHTIG: zentrales Stop aus main.dart
-                                  }
-                                : null, // disabled wenn nicht armed
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: armed ? Colors.red : Colors.grey,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 10),
+                    const SizedBox(height: 8),
+                    if (armed)
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            debugPrint(
+                                'ControlPanel: Stop getappt -> onStop()');
+                            onStop.call(); // <- WICHTIG: zentrales Stop aus main.dart
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(28),
                             ),
-                            child: Text(armed ? loc.stopButton : loc.offButton),
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
                           ),
+                          child: Text(loc.stopButton),
                         ),
-                        const SizedBox(width: 2), // reduziert
-                        Expanded(
-                          child: _ghostButton(
-                            label: loc.testButton,
-                            color: const Color(0xFFF3A547),
-                            onTap: onTest,
-                          ),
+                      )
+                    else
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: _beigeButton(
+                          icon: Icons.pets,
+                          label: loc.setButton,
+                          onTap: onArm,
                         ),
-                      ],
-                    ),
+                      ),
                   ],
                 ),
               ),
@@ -211,7 +181,7 @@ class ControlPanel extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-              horizontal: 8, vertical: 12), // reduziert
+              horizontal: 16, vertical: 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -231,23 +201,4 @@ class ControlPanel extends StatelessWidget {
     );
   }
 
-  static Widget _ghostButton(
-      {required String label,
-      required Color color,
-      required VoidCallback onTap}) {
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(28),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(28),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: 8, vertical: 12), // reduziert
-          child: Text(label,
-              style: TextStyle(color: color, fontWeight: FontWeight.w800)),
-        ),
-      ),
-    );
-  }
 }

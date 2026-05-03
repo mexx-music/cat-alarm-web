@@ -6,12 +6,14 @@ class ClockView extends StatefulWidget {
   final int hour;
   final int minute;
   final void Function(int hour, int minute) onTimeChanged;
+  final DateTime? now;
 
   const ClockView({
     super.key,
     required this.hour,
     required this.minute,
     required this.onTimeChanged,
+    this.now,
   });
 
   @override
@@ -50,6 +52,17 @@ class _ClockViewState extends State<ClockView> {
                 ),
               ),
             ),
+            if (widget.now != null)
+              Align(
+                alignment: Alignment.center,
+                child: SizedBox(
+                  width: 80,
+                  height: 80,
+                  child: CustomPaint(
+                    painter: _MiniClockPainter(widget.now!),
+                  ),
+                ),
+              ),
           ],
         ),
       );
@@ -195,9 +208,9 @@ class _ClockPainter extends CustomPainter {
         -math.pi / 2 + (((hour % 12) + minute / 60) * 2 * math.pi / 12);
 
     // Minutenzeiger (lang, halbtransparent)
-    _drawCatHand(canvas, center, r * 0.78, angMin, width: 9, faded: true);
+    _drawCatHand(canvas, center, r * 0.78, angMin, width: 3, faded: true, innerLen: r * 0.25);
     // Stundenzeiger (kurz, normal)
-    _drawCatHand(canvas, center, r * 0.58, angHour, width: 11, faded: false);
+    _drawCatHand(canvas, center, r * 0.58, angHour, width: 5, faded: false, innerLen: r * 0.25);
 
     // Nabe
     canvas.drawCircle(
@@ -209,15 +222,17 @@ class _ClockPainter extends CustomPainter {
   }
 
   void _drawCatHand(Canvas c, Offset ctr, double len, double ang,
-      {required double width, required bool faded}) {
+      {required double width, required bool faded, double innerLen = 0.0}) {
     final shaft = Paint()
       ..color = const Color(0xFFFFFFFF)
           .withAlpha(((faded ? 0.6 : 0.95) * 255).round())
       ..strokeWidth = width
       ..strokeCap = StrokeCap.round;
 
-    final tip = ctr + Offset(math.cos(ang), math.sin(ang)) * len;
-    c.drawLine(ctr, tip, shaft);
+    final dir = Offset(math.cos(ang), math.sin(ang));
+    final start = ctr + dir * innerLen;
+    final tip = ctr + dir * len;
+    c.drawLine(start, tip, shaft);
 
     // Katzenkopf-Emoji an der Spitze
     final emojiStyle = TextStyle(
@@ -235,4 +250,57 @@ class _ClockPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ClockPainter o) =>
       o.hour != hour || o.minute != minute;
+}
+
+class _MiniClockPainter extends CustomPainter {
+  final DateTime now;
+  _MiniClockPainter(this.now);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final r = size.width / 2;
+
+    canvas.drawCircle(
+        center, r, Paint()..color = const Color(0xFF000000).withAlpha(100));
+    canvas.drawCircle(
+        center,
+        r,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2
+          ..color = const Color(0xFFFFFFFF).withAlpha(180));
+
+    // Hour hand
+    final hAngle = -math.pi / 2 +
+        ((now.hour % 12) + now.minute / 60) * 2 * math.pi / 12;
+    _hand(canvas, center, r * 0.5, hAngle, 3, 200);
+
+    // Minute hand
+    final mAngle = -math.pi / 2 + now.minute * 2 * math.pi / 60;
+    _hand(canvas, center, r * 0.7, mAngle, 2, 200);
+
+    // Second hand
+    final sAngle = -math.pi / 2 + now.second * 2 * math.pi / 60;
+    _hand(canvas, center, r * 0.72, sAngle, 1, 220);
+
+    canvas.drawCircle(center, 3, Paint()..color = Colors.white);
+  }
+
+  void _hand(Canvas c, Offset center, double len, double angle, double width,
+      int alpha) {
+    c.drawLine(
+        center,
+        center + Offset(math.cos(angle), math.sin(angle)) * len,
+        Paint()
+          ..color = Colors.white.withAlpha(alpha)
+          ..strokeWidth = width
+          ..strokeCap = StrokeCap.round);
+  }
+
+  @override
+  bool shouldRepaint(covariant _MiniClockPainter o) =>
+      o.now.second != now.second ||
+      o.now.minute != now.minute ||
+      o.now.hour != now.hour;
 }
