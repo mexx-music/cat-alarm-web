@@ -191,9 +191,11 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
                         ),
                       ),
                     ),
-                    Padding(
+                    SafeArea(
+                      top: false,
+                      child: Padding(
                       padding: const EdgeInsets.only(
-                          left: 16, right: 16, bottom: 16),
+                          left: 16, right: 16, bottom: 24),
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 720),
                         child: SizedBox(
@@ -237,6 +239,7 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
                           ),
                         ),
                       ),
+                    ),
                     ),
                   ],
                 ),
