@@ -31,6 +31,15 @@
 
   <title>Cat Alarm</title>
   <link rel="manifest" href="manifest.json">
+
+  <script>
+    // Capture beforeinstallprompt so Flutter can trigger it later
+    window.deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      window.deferredPrompt = e;
+    });
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

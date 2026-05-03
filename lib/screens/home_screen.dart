@@ -5,6 +5,7 @@ import '../utils/asset_resolver.dart';
 import '../utils/time_formatters.dart';
 import '../utils/web_audio_unlock.dart';
 import '../widgets/audio_active_banner.dart';
+import '../widgets/pwa_install_button.dart';
 import '../widgets/clock_view.dart';
 import '../widgets/control_panel.dart';
 import '../widgets/mix_selector.dart';
@@ -166,6 +167,7 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
                 const Positioned.fill(child: Starfield()),
                 // Status-Banner oben im Stack
                 AudioActiveBanner(isTesting: _isTesting),
+                const PwaInstallButton(),
                 Column(
                   mainAxisSize: MainAxisSize.max,
                   children: [
