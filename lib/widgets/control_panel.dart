@@ -25,9 +25,21 @@ class ControlPanel extends StatelessWidget {
   final bool isTesting;
   final Widget? topContent; // <<< NEU
 
+  /// Wandelt hourText (12h, z.B. "04:07") + ampmText ("AM"/"PM")
+  /// rein für die Anzeige in einen 24h-String um.
+  String _display24h() {
+    final parts = hourText.split(':');
+    int h = int.tryParse(parts[0]) ?? 0;
+    final m = parts.length > 1 ? parts[1] : '00';
+    if (ampmText == 'AM' && h == 12) h = 0;
+    if (ampmText == 'PM' && h != 12) h += 12;
+    return '${h.toString().padLeft(2, '0')}:$m';
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
+    final display = _display24h();
     return SingleChildScrollView(
       padding: const EdgeInsets.all(0),
       child: Column(
@@ -67,7 +79,7 @@ class ControlPanel extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          hourText,
+                          display,
                           style: const TextStyle(
                             fontSize: 40,
                             color: Colors.white,
