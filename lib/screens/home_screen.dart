@@ -154,93 +154,262 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: LayoutBuilder(
-        builder: (context, c) {
-          return SizedBox.expand(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Wakelock-Manager: hält Bildschirm an während Alarm/Test/Armed
-                WakelockManager(active: _armed || _isTesting),
-                const Positioned.fill(child: Starfield()),
-                const PwaInstallButton(),
-                Column(
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Center(
-                          child: AspectRatio(
-                            aspectRatio: 1,
-                            child: ClockView(
-                              hour: _hour,
-                              minute: _minute,
-                              now: _now,
-                              onTimeChanged: (h, m) {
-                                setState(() {
-                                  _hour = h;
-                                  _minute = m;
-                                });
-                              },
-                            ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          WakelockManager(active: _armed || _isTesting),
+          const Positioned.fill(child: Starfield()),
+          const PwaInstallButton(),
+          ValueListenableBuilder<bool>(
+            valueListenable: CatAlarmPlayer.I.isActive,
+            builder: (context, playerActive, _) {
+              if (playerActive && !_armed) {
+                return _AlarmRingingScreen(onStop: _handleStop);
+              }
+              if (_armed) {
+                return _ArmedScreen(
+                  hour: _hour,
+                  minute: _minute,
+                  now: _now,
+                  onStop: _handleStop,
+                );
+              }
+              // Normaler Einstell-Screen
+              return Column(
+                mainAxisSize: MainAxisSize.max,
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Center(
+                        child: AspectRatio(
+                          aspectRatio: 1,
+                          child: ClockView(
+                            hour: _hour,
+                            minute: _minute,
+                            now: _now,
+                            onTimeChanged: (h, m) =>
+                                setState(() { _hour = h; _minute = m; }),
                           ),
                         ),
                       ),
                     ),
-                    SafeArea(
-                      top: false,
-                      child: Padding(
+                  ),
+                  SafeArea(
+                    top: false,
+                    child: Padding(
                       padding: const EdgeInsets.only(
                           left: 16, right: 16, bottom: 24),
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 720),
                         child: SizedBox(
                           height: 300,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(
-                                child: ValueListenableBuilder<bool>(
-                                  valueListenable: CatAlarmPlayer.I.isActive,
-                                  builder: (context, playerActive, _) {
-                                    final bool stopActive =
-                                        playerActive || _isTesting || _armed;
-                                    return ControlPanel(
-                                      hourText: formatHour12(_hour, _minute),
-                                      ampmText: amPm(_hour),
-                                      armed: stopActive,
-                                      onToggleAmPm: () => setState(() {
-                                        _hour = _hour < 12
-                                            ? (_hour + 12) % 24
-                                            : (_hour - 12) % 24;
-                                      }),
-                                      onArm: _armFromHands,
-                                      onStop: _handleStop,
-                                      onTest: _showMixPicker,
-                                      isTesting: _isTesting,
-                                      // NEU: Chips + Dateipfad IM Panel rendern
-                                      topContent: MixSelector(
-                                        selected: _selectedMix,
-                                        onChanged: (mix) =>
-                                            setState(() => _selectedMix = mix),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ],
+                          child: ControlPanel(
+                            hourText: formatHour12(_hour, _minute),
+                            ampmText: amPm(_hour),
+                            armed: playerActive || _isTesting || _armed,
+                            onToggleAmPm: () => setState(() {
+                              _hour = _hour < 12
+                                  ? (_hour + 12) % 24
+                                  : (_hour - 12) % 24;
+                            }),
+                            onArm: _armFromHands,
+                            onStop: _handleStop,
+                            onTest: _showMixPicker,
+                            isTesting: _isTesting,
+                            topContent: MixSelector(
+                              selected: _selectedMix,
+                              onChanged: (mix) =>
+                                  setState(() => _selectedMix = mix),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Alarm-klingelt-Screen ──────────────────────────────────────────────────
+class _AlarmRingingScreen extends StatefulWidget {
+  const _AlarmRingingScreen({required this.onStop});
+  final VoidCallback onStop;
+
+  @override
+  State<_AlarmRingingScreen> createState() => _AlarmRingingScreenState();
+}
+
+class _AlarmRingingScreenState extends State<_AlarmRingingScreen> {
+  bool _showFirst = true;
+  late final Timer _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 600), (_) {
+      if (mounted) setState(() => _showFirst = !_showFirst);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: Image.asset(
+              _showFirst
+                  ? 'assets/images/wakeupcat1.png'
+                  : 'assets/images/wakeupcat2.png',
+              key: ValueKey(_showFirst),
+              height: 260,
+              fit: BoxFit.contain,
             ),
-          );
-        },
+          ),
+          const SizedBox(height: 32),
+          const Text(
+            'Aufwachen! 😺',
+            style: TextStyle(
+              fontSize: 26,
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const SizedBox(height: 40),
+          SizedBox(
+            width: 220,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: widget.onStop,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
+              ),
+              child: const Text(
+                'Stopp',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Armed-Screen (Fullscreen) ──────────────────────────────────────────────
+class _ArmedScreen extends StatelessWidget {
+  const _ArmedScreen({
+    required this.hour,
+    required this.minute,
+    required this.now,
+    required this.onStop,
+  });
+
+  final int hour;
+  final int minute;
+  final DateTime now;
+  final VoidCallback onStop;
+
+  String get _time24h =>
+      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+
+  String get _currentTime =>
+      '${now.hour.toString().padLeft(2, '0')}'
+      ':${now.minute.toString().padLeft(2, '0')}'
+      ':${now.second.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    final screenH = MediaQuery.of(context).size.height;
+    final imgHeight = (screenH * 0.32).clamp(220.0, 300.0);
+    return SafeArea(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Dezente aktuelle Uhrzeit oben
+          Text(
+            _currentTime,
+            style: const TextStyle(
+              fontSize: 15,
+              color: Color.fromRGBO(255, 255, 255, 0.65),
+              fontWeight: FontWeight.w400,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Sleepcat-Bild (ersetzt ClockView im Armed-Zustand)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Image.asset(
+              'assets/images/sleepcat.png',
+              height: imgHeight,
+              fit: BoxFit.cover,
+            ),
+          ),
+          const SizedBox(height: 28),
+          const Icon(Icons.nightlight_round,
+              size: 48, color: Color(0xFFB0C4DE)),
+          const SizedBox(height: 16),
+          const Text(
+            'Wecker gestellt',
+            style: TextStyle(
+              fontSize: 20,
+              color: Colors.white70,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _time24h,
+            style: const TextStyle(
+              fontSize: 64,
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 4,
+            ),
+          ),
+          const SizedBox(height: 40),
+          SizedBox(
+            width: 220,
+            height: 56,
+            child: ElevatedButton(
+              onPressed: onStop,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(28),
+                ),
+              ),
+              child: const Text(
+                'Stopp',
+                style:
+                    TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
