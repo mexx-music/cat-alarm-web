@@ -17,10 +17,11 @@ class MixSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
           loc.selectTone,
+          textAlign: TextAlign.center,
           style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
         ),
         const SizedBox(height: 8),
