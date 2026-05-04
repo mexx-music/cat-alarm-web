@@ -52,16 +52,8 @@ class ControlPanel extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(18),
               child: Container(
-                decoration: BoxDecoration(
-                  color:
-                      const Color(0xFF232323).withAlpha((0.82 * 255).round()),
-                  boxShadow: const [
-                    BoxShadow(
-                        blurRadius: 18,
-                        offset: Offset(0, 6),
-                        color: Colors.black26)
-                  ],
-                  image: const DecorationImage(
+                decoration: const BoxDecoration(
+                  image: DecorationImage(
                     image: AssetImage('assets/images/paw_shapes.png'),
                     fit: BoxFit.cover,
                     opacity: 0.18,

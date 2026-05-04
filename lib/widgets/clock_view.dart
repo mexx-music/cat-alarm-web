@@ -49,10 +49,6 @@ class _ClockViewState extends State<ClockView> {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Positioned.fill(
-                child: ColoredBox(
-                    color: const Color(0xFF000000)
-                        .withAlpha((0.25 * 255).round()))),
             AnimatedOpacity(
               opacity: _isDragging ? 0.0 : 0.20,
               duration: const Duration(milliseconds: 300),
