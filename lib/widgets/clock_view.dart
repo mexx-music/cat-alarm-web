@@ -23,6 +23,7 @@ class ClockView extends StatefulWidget {
 
 class _ClockViewState extends State<ClockView> {
   bool _dragHour = false, _dragMinute = false;
+  bool _isDragging = false;
   double? _dragOffsetMinute, _dragOffsetHour;
   int? _prevMinute;
   bool _showAlarmTime = false;
@@ -52,6 +53,19 @@ class _ClockViewState extends State<ClockView> {
                 child: ColoredBox(
                     color: const Color(0xFF000000)
                         .withAlpha((0.25 * 255).round()))),
+            AnimatedOpacity(
+              opacity: _isDragging ? 0.0 : 0.20,
+              duration: const Duration(milliseconds: 300),
+              child: Align(
+                alignment: const Alignment(0, 0.2),
+                child: Image.asset(
+                  'assets/images/catclock.png',
+                  width: size * 0.65,
+                  height: size * 0.65,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
             Center(
               child: CustomPaint(
                 size: Size.square(size),
@@ -136,7 +150,7 @@ class _ClockViewState extends State<ClockView> {
 
     if (_dragMinute || _dragHour) {
       _revertTimer?.cancel();
-      setState(() => _showAlarmTime = true);
+      setState(() { _showAlarmTime = true; _isDragging = true; });
     }
   }
 
@@ -183,6 +197,7 @@ class _ClockViewState extends State<ClockView> {
     _dragOffsetHour = null;
     _prevMinute = null;
     _revertTimer?.cancel();
+    setState(() => _isDragging = false);
     _revertTimer = Timer(const Duration(milliseconds: 1500), () {
       if (mounted) setState(() => _showAlarmTime = false);
     });
