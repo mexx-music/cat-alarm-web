@@ -85,4 +85,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get statusPlayerErrorPrefix => 'Error del reproductor: ';
+
+  @override
+  String get alarmArmed => 'Alarma establecida';
+
+  @override
+  String get wakeUpTitle => '¡Despierta! 😺';
 }

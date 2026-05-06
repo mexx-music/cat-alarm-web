@@ -26,6 +26,8 @@
   "statusPlayerStatePrefix": "PlayerState: ",
   "statusFinished": "Sound fertig.",
   "statusPlayerErrorPrefix": "Player-Fehler: ",
+  "alarmArmed": "Wecker gestellt",
+  "wakeUpTitle": "Aufwachen! 😺",
   "@appTitle": {
     "description": "App title shown in the app bar"
   },

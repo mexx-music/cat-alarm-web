@@ -85,4 +85,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get statusPlayerErrorPrefix => 'Player-Fehler: ';
+
+  @override
+  String get alarmArmed => 'Wecker gestellt';
+
+  @override
+  String get wakeUpTitle => 'Aufwachen! 😺';
 }

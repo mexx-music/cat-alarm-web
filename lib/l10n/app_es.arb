@@ -26,6 +26,8 @@
   "statusPlayerStatePrefix": "Estado del reproductor: ",
   "statusFinished": "Sonido finalizado.",
   "statusPlayerErrorPrefix": "Error del reproductor: ",
+  "alarmArmed": "Alarma establecida",
+  "wakeUpTitle": "¡Despierta! 😺",
   "@appTitle": {
     "description": "App title shown in the app bar"
   },

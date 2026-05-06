@@ -26,6 +26,8 @@
   "statusPlayerStatePrefix": "播放器状态：",
   "statusFinished": "声音完成。",
   "statusPlayerErrorPrefix": "播放器错误：",
+  "alarmArmed": "闹钟已设置",
+  "wakeUpTitle": "起床啦！😺",
   "@appTitle": {
     "description": "App title shown in the app bar"
   },

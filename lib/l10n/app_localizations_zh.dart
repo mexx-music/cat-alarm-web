@@ -85,6 +85,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get statusPlayerErrorPrefix => '播放器错误：';
+
+  @override
+  String get alarmArmed => '闹钟已设置';
+
+  @override
+  String get wakeUpTitle => '起床啦！😺';
 }
 
 /// The translations for Chinese, as used in China (`zh_CN`).
@@ -168,4 +174,10 @@ class AppLocalizationsZhCn extends AppLocalizationsZh {
 
   @override
   String get statusPlayerErrorPrefix => '播放器错误：';
+
+  @override
+  String get alarmArmed => '闹钟已设置';
+
+  @override
+  String get wakeUpTitle => '起床啦！😺';
 }

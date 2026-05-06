@@ -258,6 +258,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Player error: '**
   String get statusPlayerErrorPrefix;
+
+  /// No description provided for @alarmArmed.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm set'**
+  String get alarmArmed;
+
+  /// No description provided for @wakeUpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Wake up! 😺'**
+  String get wakeUpTitle;
 }
 
 class _AppLocalizationsDelegate

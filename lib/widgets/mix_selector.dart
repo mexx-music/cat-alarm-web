@@ -25,27 +25,39 @@ class MixSelector extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
         ),
         const SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ChoiceChip(
-              label: Text(loc.soft),
-              selected: selected == AlarmMix.soft,
-              onSelected: (_) => onChanged(AlarmMix.soft),
-            ),
-            const SizedBox(width: 8),
-            ChoiceChip(
-              label: Text(loc.standard),
-              selected: selected == AlarmMix.standard,
-              onSelected: (_) => onChanged(AlarmMix.standard),
-            ),
-            const SizedBox(width: 8),
-            ChoiceChip(
-              label: Text(loc.power),
-              selected: selected == AlarmMix.power,
-              onSelected: (_) => onChanged(AlarmMix.power),
-            ),
-          ],
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ChoiceChip(
+                label: Text(loc.soft),
+                selected: selected == AlarmMix.soft,
+                onSelected: (_) => onChanged(AlarmMix.soft),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              ),
+              const SizedBox(width: 6),
+              ChoiceChip(
+                label: Text(loc.standard),
+                selected: selected == AlarmMix.standard,
+                onSelected: (_) => onChanged(AlarmMix.standard),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              ),
+              const SizedBox(width: 6),
+              ChoiceChip(
+                label: Text(loc.power),
+                selected: selected == AlarmMix.power,
+                onSelected: (_) => onChanged(AlarmMix.power),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 6),
         // Entfernt: Text zur aktuellen Auswahl und Datei

@@ -12,6 +12,7 @@ import '../widgets/wakelock_manager.dart';
 import '../starfield.dart';
 import '../audio/cat_alarm_player.dart';
 import '../core/alarm_core.dart';
+import '../l10n/app_localizations.dart';
 
 class CatAlarmScreen extends StatefulWidget {
   const CatAlarmScreen({super.key});
@@ -164,7 +165,7 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
             valueListenable: CatAlarmPlayer.I.isActive,
             builder: (context, playerActive, _) {
               if (playerActive && !_armed) {
-                return _AlarmRingingScreen(onStop: _handleStop);
+                return _AlarmRingingScreen(onStop: _handleStop, hour: _hour, minute: _minute);
               }
               if (_armed) {
                 return _ArmedScreen(
@@ -239,8 +240,10 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
 
 // ── Alarm-klingelt-Screen ──────────────────────────────────────────────────
 class _AlarmRingingScreen extends StatefulWidget {
-  const _AlarmRingingScreen({required this.onStop});
+  const _AlarmRingingScreen({required this.onStop, required this.hour, required this.minute});
   final VoidCallback onStop;
+  final int hour;
+  final int minute;
 
   @override
   State<_AlarmRingingScreen> createState() => _AlarmRingingScreenState();
@@ -264,27 +267,58 @@ class _AlarmRingingScreenState extends State<_AlarmRingingScreen> {
     super.dispose();
   }
 
+  String get _alarmTime =>
+      '${widget.hour.toString().padLeft(2, '0')}:${widget.minute.toString().padLeft(2, '0')}';
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return SafeArea(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: Image.asset(
-              _showFirst
-                  ? 'assets/images/wakeupcat1.png'
-                  : 'assets/images/wakeupcat2.png',
-              key: ValueKey(_showFirst),
-              height: 260,
-              fit: BoxFit.contain,
+          SizedBox(
+            height: 260,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: Image.asset(
+                    _showFirst
+                        ? 'assets/images/wakeupcat1.png'
+                        : 'assets/images/wakeupcat2.png',
+                    key: ValueKey(_showFirst),
+                    height: 260,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+                Positioned(
+                  bottom: 10,
+                  left: 0,
+                  right: 0,
+                  child: Text(
+                    _alarmTime,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 38,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFFFF4500),
+                      letterSpacing: 4,
+                      shadows: [
+                        Shadow(color: Color(0xFFFF4500), blurRadius: 16),
+                        Shadow(color: Color(0xFFFF8C00), blurRadius: 8),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 32),
-          const Text(
-            'Aufwachen! 😺',
-            style: TextStyle(
+          Text(
+            l10n.wakeUpTitle,
+            style: const TextStyle(
               fontSize: 26,
               color: Colors.white,
               fontWeight: FontWeight.w700,
@@ -304,9 +338,9 @@ class _AlarmRingingScreenState extends State<_AlarmRingingScreen> {
                   borderRadius: BorderRadius.circular(28),
                 ),
               ),
-              child: const Text(
-                'Stopp',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              child: Text(
+                l10n.stopButton,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
               ),
             ),
           ),
@@ -370,9 +404,9 @@ class _ArmedScreen extends StatelessWidget {
           const Icon(Icons.nightlight_round,
               size: 48, color: Color(0xFFB0C4DE)),
           const SizedBox(height: 16),
-          const Text(
-            'Wecker gestellt',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.alarmArmed,
+            style: const TextStyle(
               fontSize: 20,
               color: Colors.white70,
               fontWeight: FontWeight.w600,
@@ -402,10 +436,10 @@ class _ArmedScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(28),
                 ),
               ),
-              child: const Text(
-                'Stopp',
+              child: Text(
+                AppLocalizations.of(context)!.stopButton,
                 style:
-                    TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
               ),
             ),
           ),
