@@ -50,7 +50,7 @@ class _ClockViewState extends State<ClockView> {
           fit: StackFit.expand,
           children: [
             AnimatedOpacity(
-              opacity: _isDragging ? 0.0 : 0.20,
+              opacity: _isDragging ? 0.0 : 0.34,
               duration: const Duration(milliseconds: 300),
               child: Align(
                 alignment: const Alignment(0, 0.2),

@@ -56,7 +56,7 @@ class ControlPanel extends StatelessWidget {
                   image: DecorationImage(
                     image: AssetImage('assets/images/paw_shapes.png'),
                     fit: BoxFit.cover,
-                    opacity: 0.18,
+                    opacity: 0.25,
                   ),
                 ),
                 padding: const EdgeInsets.fromLTRB(18, 10, 18, 10),
