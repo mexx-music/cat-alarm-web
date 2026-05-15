@@ -91,6 +91,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get wakeUpTitle => '起床啦！😺';
+
+  @override
+  String get homeQuestion => '你的猫咪应该几点叫醒你？';
+
+  @override
+  String get setAlarmButton => '设置闹钟';
+
+  @override
+  String get intensityTitle => '选择唤醒强度';
+
+  @override
+  String get navAlarm => '闹钟';
+
+  @override
+  String get navSounds => '声音';
 }
 
 /// The translations for Chinese, as used in China (`zh_CN`).
@@ -180,4 +195,19 @@ class AppLocalizationsZhCn extends AppLocalizationsZh {
 
   @override
   String get wakeUpTitle => '起床啦！😺';
+
+  @override
+  String get homeQuestion => '你的猫咪应该几点叫醒你？';
+
+  @override
+  String get setAlarmButton => '设置闹钟';
+
+  @override
+  String get intensityTitle => '选择唤醒强度';
+
+  @override
+  String get navAlarm => '闹钟';
+
+  @override
+  String get navSounds => '声音';
 }

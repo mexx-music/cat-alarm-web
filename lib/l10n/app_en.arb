@@ -28,6 +28,11 @@
   "statusPlayerErrorPrefix": "Player error: ",
   "alarmArmed": "Alarm set",
   "wakeUpTitle": "Wake up! 😺",
+  "homeQuestion": "When should your cat wake you?",
+  "setAlarmButton": "Set alarm",
+  "intensityTitle": "Choose wake intensity",
+  "navAlarm": "Alarm",
+  "navSounds": "Sounds",
   "@appTitle": {
     "description": "App title shown in the app bar"
   },

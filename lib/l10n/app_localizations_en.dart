@@ -91,4 +91,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get wakeUpTitle => 'Wake up! 😺';
+
+  @override
+  String get homeQuestion => 'When should your cat wake you?';
+
+  @override
+  String get setAlarmButton => 'Set alarm';
+
+  @override
+  String get intensityTitle => 'Choose wake intensity';
+
+  @override
+  String get navAlarm => 'Alarm';
+
+  @override
+  String get navSounds => 'Sounds';
 }

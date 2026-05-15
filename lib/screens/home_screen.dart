@@ -6,7 +6,6 @@ import '../utils/time_formatters.dart';
 import '../utils/web_audio_unlock.dart';
 import '../widgets/pwa_install_button.dart';
 import '../widgets/clock_view.dart';
-import '../widgets/control_panel.dart';
 import '../widgets/mix_selector.dart';
 import '../widgets/wakelock_manager.dart';
 import '../starfield.dart';
@@ -196,60 +195,26 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
                   onStop: _handleStop,
                 );
               }
-              // Normaler Einstell-Screen
-              return Column(
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Center(
-                        child: AspectRatio(
-                          aspectRatio: 1,
-                          child: ClockView(
-                            hour: _hour,
-                            minute: _minute,
-                            now: _now,
-                            onTimeChanged: (h, m) =>
-                                setState(() { _hour = h; _minute = m; }),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SafeArea(
-                    top: false,
-                    child: Padding(
-                      padding: const EdgeInsets.only(
-                          left: 16, right: 16, bottom: 24),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 720),
-                        child: SizedBox(
-                          height: 300,
-                          child: ControlPanel(
-                            hourText: formatHour12(_hour, _minute),
-                            ampmText: amPm(_hour),
-                            armed: playerActive || _isTesting || _armed,
-                            onToggleAmPm: () => setState(() {
-                              _hour = _hour < 12
-                                  ? (_hour + 12) % 24
-                                  : (_hour - 12) % 24;
-                            }),
-                            onArm: _armFromHands,
-                            onStop: _handleStop,
-                            onTest: _showMixPicker,
-                            isTesting: _isTesting,
-                            topContent: MixSelector(
-                              selected: _selectedMix,
-                              onChanged: (mix) =>
-                                  setState(() => _selectedMix = mix),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              // Normaler Einstell-Screen — cozy night style
+              final showStop = playerActive || _isTesting;
+              return _HomeSetupView(
+                hour: _hour,
+                minute: _minute,
+                now: _now,
+                selectedMix: _selectedMix,
+                onTimeChanged: (h, m) =>
+                    setState(() { _hour = h; _minute = m; }),
+                onToggleAmPm: () => setState(() {
+                  _hour = _hour < 12
+                      ? (_hour + 12) % 24
+                      : (_hour - 12) % 24;
+                }),
+                onMixChanged: (mix) => setState(() => _selectedMix = mix),
+                onArm: _armFromHands,
+                onStop: _handleStop,
+                onPreview: _showMixPicker,
+                isTesting: _isTesting,
+                showStop: showStop,
               );
             },
           ),
@@ -466,6 +431,397 @@ class _ArmedScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Setup-View (cozy night layout) ─────────────────────────────────────────
+class _HomeSetupView extends StatelessWidget {
+  const _HomeSetupView({
+    required this.hour,
+    required this.minute,
+    required this.now,
+    required this.selectedMix,
+    required this.onTimeChanged,
+    required this.onToggleAmPm,
+    required this.onMixChanged,
+    required this.onArm,
+    required this.onStop,
+    required this.onPreview,
+    required this.isTesting,
+    required this.showStop,
+  });
+
+  final int hour;
+  final int minute;
+  final DateTime now;
+  final AlarmMix selectedMix;
+  final void Function(int hour, int minute) onTimeChanged;
+  final VoidCallback onToggleAmPm;
+  final ValueChanged<AlarmMix> onMixChanged;
+  final VoidCallback onArm;
+  final VoidCallback onStop;
+  final VoidCallback onPreview;
+  final bool isTesting;
+  final bool showStop;
+
+  static const Color _warmAmber = Color(0xFFE8A65A);
+  static const Color _warmGold = Color(0xFFE8C28A);
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return SafeArea(
+      child: Column(
+        children: [
+          _Header(question: l10n.homeQuestion),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Center(
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: ClockView(
+                    hour: hour,
+                    minute: minute,
+                    now: now,
+                    onTimeChanged: onTimeChanged,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _TimeReadout(
+                    text: formatHour12(hour, minute)),
+                const SizedBox(width: 10),
+                _AmPmPill(
+                    label: hour < 12 ? l10n.am : l10n.pm,
+                    onTap: onToggleAmPm),
+                const SizedBox(width: 10),
+                _IconChip(
+                  icon: isTesting
+                      ? Icons.stop_rounded
+                      : Icons.play_arrow_rounded,
+                  onTap: onPreview,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: Text(
+              l10n.intensityTitle,
+              style: TextStyle(
+                color: Colors.white.withAlpha(200),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: MixSelector(
+              selected: selectedMix,
+              onChanged: onMixChanged,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            child: showStop
+                ? _StopButton(onTap: onStop)
+                : _PrimaryCta(
+                    label: l10n.setAlarmButton,
+                    onTap: onArm,
+                  ),
+          ),
+          const SizedBox(height: 14),
+          const _BottomNavStrip(),
+          const SizedBox(height: 6),
+        ],
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header({required this.question});
+  final String question;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Text(
+              question,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                height: 1.25,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TimeReadout extends StatelessWidget {
+  const _TimeReadout({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        color: _HomeSetupView._warmGold,
+        fontSize: 22,
+        fontWeight: FontWeight.w400,
+        letterSpacing: 2.5,
+        height: 1.0,
+      ),
+    );
+  }
+}
+
+class _AmPmPill extends StatelessWidget {
+  const _AmPmPill({required this.label, required this.onTap});
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 36,
+      child: Material(
+        color: const Color(0xFF1F1B36).withAlpha(180),
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: _HomeSetupView._warmGold.withAlpha(70), width: 1),
+            ),
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: _HomeSetupView._warmGold,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _IconChip extends StatelessWidget {
+  const _IconChip({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 38,
+      height: 38,
+      child: Material(
+        color: const Color(0xFF1F1B36).withAlpha(180),
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: _HomeSetupView._warmGold.withAlpha(70), width: 1),
+            ),
+            child: Center(
+              child: Icon(icon,
+                  color: _HomeSetupView._warmGold, size: 22),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PrimaryCta extends StatelessWidget {
+  const _PrimaryCta({required this.label, required this.onTap});
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 58,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30),
+          gradient: const LinearGradient(
+            colors: [Color(0xFFF2B872), Color(0xFFE08A3C)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFE08A3C).withAlpha(110),
+              blurRadius: 24,
+              spreadRadius: 1,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          borderRadius: BorderRadius.circular(30),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.pets_rounded,
+                      color: Color(0xFF3B2412), size: 22),
+                  const SizedBox(width: 10),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: Color(0xFF3B2412),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 17,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StopButton extends StatelessWidget {
+  const _StopButton({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 58,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.red,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+        ),
+        child: Text(
+          AppLocalizations.of(context)!.stopButton,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomNavStrip extends StatelessWidget {
+  const _BottomNavStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 60),
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF14102B).withAlpha(160),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withAlpha(14)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _NavItem(
+              icon: Icons.alarm_rounded, label: l10n.navAlarm, active: true),
+          _NavItem(
+              icon: Icons.music_note_rounded,
+              label: l10n.navSounds,
+              active: false),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem(
+      {required this.icon, required this.label, required this.active});
+  final IconData icon;
+  final String label;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = active
+        ? _HomeSetupView._warmAmber
+        : Colors.white.withAlpha(110);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: color, size: 22,
+            shadows: active
+                ? [
+                    Shadow(
+                      color: _HomeSetupView._warmAmber.withAlpha(140),
+                      blurRadius: 10,
+                    ),
+                  ]
+                : null),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 11,
+            fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }

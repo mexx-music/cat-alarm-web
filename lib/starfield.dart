@@ -82,20 +82,35 @@ class _StarfieldPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Hintergrund: dunkler Sternenhimmel
+    // Hintergrund: warmer Navy/Violett-Verlauf für cozy Nachtstimmung
     final rect = Offset.zero & size;
     final bg = Paint()
-      ..shader = RadialGradient(
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
         colors: [
-          Color.lerp(
-              const Color(0xFF040507), Colors.white, backgroundBrightness)!,
-          Color.lerp(const Color(0xFF0B0E12), Colors.white,
-              backgroundBrightness * 0.7)!,
+          Color.lerp(const Color(0xFF1B1638), Colors.white,
+              backgroundBrightness * 0.5)!,
+          Color.lerp(const Color(0xFF14102B), Colors.white,
+              backgroundBrightness * 0.3)!,
+          Color.lerp(const Color(0xFF0E0B22), Colors.white,
+              backgroundBrightness * 0.2)!,
         ],
-        radius: 1.2,
-        center: Alignment.topCenter,
+        stops: const [0.0, 0.55, 1.0],
       ).createShader(rect);
     canvas.drawRect(rect, bg);
+
+    // Subtiler warmer Glow oben (wie der Mond am Horizont)
+    final glow = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xFFE8A65A).withAlpha(38),
+          const Color(0xFFE8A65A).withAlpha(0),
+        ],
+      ).createShader(Rect.fromCircle(
+          center: Offset(size.width * 0.78, size.height * 0.05),
+          radius: size.width * 0.55));
+    canvas.drawRect(rect, glow);
 
     // Sterne
     final paint = Paint()..isAntiAlias = true;

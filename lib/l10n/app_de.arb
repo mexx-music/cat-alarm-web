@@ -28,6 +28,11 @@
   "statusPlayerErrorPrefix": "Player-Fehler: ",
   "alarmArmed": "Wecker gestellt",
   "wakeUpTitle": "Aufwachen! 😺",
+  "homeQuestion": "Wann soll deine Katze dich wecken?",
+  "setAlarmButton": "Wecker stellen",
+  "intensityTitle": "Weckintensität wählen",
+  "navAlarm": "Wecker",
+  "navSounds": "Klänge",
   "@appTitle": {
     "description": "App title shown in the app bar"
   },

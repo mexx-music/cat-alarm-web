@@ -1,5 +1,4 @@
 // lib/widgets/clock_view.dart
-import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
@@ -26,89 +25,90 @@ class _ClockViewState extends State<ClockView> {
   bool _isDragging = false;
   double? _dragOffsetMinute, _dragOffsetHour;
   int? _prevMinute;
-  bool _showAlarmTime = false;
-  Timer? _revertTimer;
 
   @override
   void dispose() {
-    _revertTimer?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, c) {
-      final size = math.min(c.maxWidth, c.maxHeight) - 24;
-      final center = Offset(c.maxWidth / 2, c.maxHeight / 2);
+      final maxW = c.maxWidth.isFinite ? c.maxWidth : 0.0;
+      final maxH = c.maxHeight.isFinite ? c.maxHeight : 0.0;
+      final size = math.max(0.0, math.min(maxW, maxH) - 24);
+      if (size <= 0) {
+        return const SizedBox.shrink();
+      }
+      final center = Offset(maxW / 2, maxH / 2);
       final radius = size / 2;
+      final catSize = math.max(0.0, size * 0.72);
+      final miniSize = math.min(80.0, size * 0.32);
       return GestureDetector(
         behavior: HitTestBehavior.opaque,
         onPanStart: (d) => _onPanStart(d, center, radius),
         onPanUpdate: (d) => _onPanUpdate(d, center, radius),
         onPanEnd: _onPanEnd,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            AnimatedOpacity(
-              opacity: _isDragging ? 0.0 : 0.34,
-              duration: const Duration(milliseconds: 300),
-              child: Align(
-                alignment: const Alignment(0, 0.2),
-                child: Image.asset(
-                  'assets/images/catclock.png',
-                  width: size * 0.65,
-                  height: size * 0.65,
-                  fit: BoxFit.contain,
+        child: SizedBox.expand(
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned.fill(
+                child: AnimatedOpacity(
+                  opacity: _isDragging ? 0.0 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: Align(
+                    alignment: const Alignment(0, 0.15),
+                    child: SizedBox(
+                      width: catSize,
+                      height: catSize,
+                      child: ShaderMask(
+                        blendMode: BlendMode.dstIn,
+                        shaderCallback: (Rect bounds) {
+                          return const RadialGradient(
+                            center: Alignment.center,
+                            radius: 0.5,
+                            colors: <Color>[
+                              Color(0xFFFFFFFF),
+                              Color(0xFFFFFFFF),
+                              Color(0x00FFFFFF),
+                            ],
+                            stops: <double>[0.0, 0.62, 1.0],
+                          ).createShader(bounds);
+                        },
+                        child: Image.asset(
+                          'assets/images/sleepcat.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            ),
-            Center(
-              child: CustomPaint(
-                size: Size.square(size),
-                painter: _ClockPainter(
-                  hour: widget.hour,
-                  minute: widget.minute,
+              SizedBox(
+                width: size,
+                height: size,
+                child: CustomPaint(
+                  size: Size.square(size),
+                  painter: _ClockPainter(
+                    hour: widget.hour,
+                    minute: widget.minute,
+                  ),
                 ),
               ),
-            ),
-            Align(
-              alignment: Alignment.center,
-              child: _showAlarmTime
-                  ? _buildAlarmTimeOverlay()
-                  : widget.now != null
-                      ? SizedBox(
-                          width: 80,
-                          height: 80,
-                          child: CustomPaint(
-                            painter: _MiniClockPainter(widget.now!),
-                          ),
-                        )
-                      : const SizedBox.shrink(),
-            ),
-          ],
+              if (widget.now != null && miniSize > 0)
+                SizedBox(
+                  width: miniSize,
+                  height: miniSize,
+                  child: CustomPaint(
+                    painter: _MiniClockPainter(widget.now!),
+                  ),
+                ),
+            ],
+          ),
         ),
       );
     });
-  }
-
-  Widget _buildAlarmTimeOverlay() {
-    final h = widget.hour.toString().padLeft(2, '0');
-    final m = widget.minute.toString().padLeft(2, '0');
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF000000).withAlpha(195),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        '$h:$m',
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 28,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
   }
 
   // === Drag-Logik (wie in deiner funktionierenden Version) ===
@@ -145,8 +145,7 @@ class _ClockViewState extends State<ClockView> {
     }
 
     if (_dragMinute || _dragHour) {
-      _revertTimer?.cancel();
-      setState(() { _showAlarmTime = true; _isDragging = true; });
+      setState(() => _isDragging = true);
     }
   }
 
@@ -192,11 +191,7 @@ class _ClockViewState extends State<ClockView> {
     _dragOffsetMinute = null;
     _dragOffsetHour = null;
     _prevMinute = null;
-    _revertTimer?.cancel();
     setState(() => _isDragging = false);
-    _revertTimer = Timer(const Duration(milliseconds: 1500), () {
-      if (mounted) setState(() => _showAlarmTime = false);
-    });
   }
 }
 
@@ -204,48 +199,61 @@ class _ClockPainter extends CustomPainter {
   final int hour, minute;
   _ClockPainter({required this.hour, required this.minute});
 
+  // Warm cozy palette
+  static const Color _gold = Color(0xFFE8C28A);
+  static const Color _goldSoft = Color(0xFFC9A36A);
+
   @override
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
     final r = size.width / 2;
 
-    // Zifferblatt
+    // Zifferblatt (sehr dezent, transluzent)
     final face = Paint()
-      ..color = const Color(0xFF000000).withAlpha((0.15 * 255).round());
+      ..color = const Color(0xFF1A1530).withAlpha(45);
     final ring = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 8
-      ..color = const Color(0xFFFFFFFF).withAlpha((0.85 * 255).round());
+      ..strokeWidth = 1.4
+      ..color = _gold.withAlpha(110);
+    final ringGlow = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 6
+      ..color = _gold.withAlpha(28)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
 
     canvas.drawCircle(center, r, face);
+    canvas.drawCircle(center, r, ringGlow);
     canvas.drawCircle(center, r, ring);
 
-    // Ticks + Zahlen
+    // Ticks + Zahlen (warm gold, dünne Linien)
     final tick = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 2;
+      ..color = _goldSoft.withAlpha(110)
+      ..strokeWidth = 1;
     final tick5 = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 4;
+      ..color = _gold.withAlpha(190)
+      ..strokeWidth = 1.6
+      ..strokeCap = StrokeCap.round;
     final tp = TextPainter(
         textAlign: TextAlign.center, textDirection: TextDirection.ltr);
 
     for (int i = 0; i < 60; i++) {
       final ang = -math.pi / 2 + i * 2 * math.pi / 60;
       final inner = center +
-          Offset(math.cos(ang), math.sin(ang)) * (r - (i % 5 == 0 ? 22 : 12));
-      final outer = center + Offset(math.cos(ang), math.sin(ang)) * r;
+          Offset(math.cos(ang), math.sin(ang)) * (r - (i % 5 == 0 ? 16 : 8));
+      final outer =
+          center + Offset(math.cos(ang), math.sin(ang)) * (r - 2);
       canvas.drawLine(inner, outer, i % 5 == 0 ? tick5 : tick);
 
       if (i % 5 == 0) {
         final num = (i ~/ 5 == 0) ? 12 : i ~/ 5;
-        final pos = center + Offset(math.cos(ang), math.sin(ang)) * (r - 44);
+        final pos = center + Offset(math.cos(ang), math.sin(ang)) * (r - 38);
         tp.text = TextSpan(
           text: '$num',
           style: const TextStyle(
-            color: Colors.white,
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
+            color: _gold,
+            fontSize: 18,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.5,
           ),
         );
         tp.layout();
@@ -258,36 +266,37 @@ class _ClockPainter extends CustomPainter {
     final angHour =
         -math.pi / 2 + ((hour % 12) * 2 * math.pi / 12);
 
-    // Minutenzeiger (cyan, Pfote)
-    _drawCatHand(canvas, center, r * 0.78, angMin,
-        width: 3, faded: true, innerLen: r * 0.25,
-        markerColor: const Color(0xFF0097A7).withAlpha(210),
-        emoji: '🐾', emojiSize: 26);
-    // Stundenzeiger (gold, Katze)
-    _drawCatHand(canvas, center, r * 0.78, angHour,
-        width: 5, faded: false, innerLen: r * 0.25,
-        markerColor: const Color(0xFFFFB300).withAlpha(230),
-        emoji: '🐱', emojiSize: 34);
+    // Minutenzeiger (sehr dezent)
+    _drawCatHand(canvas, center, r * 0.74, angMin,
+        width: 1.6,
+        innerLen: r * 0.18,
+        shaftColor: _goldSoft.withAlpha(150),
+        markerColor: _goldSoft.withAlpha(180),
+        emoji: '🐾',
+        emojiSize: 20);
+    // Stundenzeiger (warm gold, Katzenkopf)
+    _drawCatHand(canvas, center, r * 0.62, angHour,
+        width: 2.4,
+        innerLen: r * 0.18,
+        shaftColor: _gold.withAlpha(220),
+        markerColor: _gold.withAlpha(235),
+        emoji: '🐱',
+        emojiSize: 28);
 
     // Nabe
-    canvas.drawCircle(
-        center,
-        11,
-        Paint()
-          ..color = const Color(0xFF000000).withAlpha((0.9 * 255).round()));
-    canvas.drawCircle(center, 5, Paint()..color = const Color(0xFFFFFFFF));
+    canvas.drawCircle(center, 6, Paint()..color = _gold);
+    canvas.drawCircle(center, 2.5, Paint()..color = const Color(0xFF1A1530));
   }
 
   void _drawCatHand(Canvas c, Offset ctr, double len, double ang,
       {required double width,
-       required bool faded,
        double innerLen = 0.0,
+       required Color shaftColor,
        required Color markerColor,
        required String emoji,
        required double emojiSize}) {
     final shaft = Paint()
-      ..color = const Color(0xFFFFFFFF)
-          .withAlpha(((faded ? 0.6 : 0.95) * 255).round())
+      ..color = shaftColor
       ..strokeWidth = width
       ..strokeCap = StrokeCap.round;
 
@@ -296,16 +305,15 @@ class _ClockPainter extends CustomPainter {
     final tip = ctr + dir * len;
     c.drawLine(start, tip, shaft);
 
-    // Farbiger Kreis als Hintergrund
-    final circleR = emojiSize * 0.58;
-    c.drawCircle(tip, circleR, Paint()..color = markerColor);
+    // Warm glow
+    final circleR = emojiSize * 0.55;
     c.drawCircle(
-      tip, circleR,
-      Paint()
-        ..color = Colors.white.withAlpha(80)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
-    );
+        tip,
+        circleR + 4,
+        Paint()
+          ..color = markerColor.withAlpha(60)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6));
+    c.drawCircle(tip, circleR, Paint()..color = markerColor);
 
     // Emoji
     final tp2 = TextPainter(

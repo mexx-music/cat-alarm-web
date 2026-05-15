@@ -270,6 +270,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Wake up! 😺'**
   String get wakeUpTitle;
+
+  /// No description provided for @homeQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'When should your cat wake you?'**
+  String get homeQuestion;
+
+  /// No description provided for @setAlarmButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Set alarm'**
+  String get setAlarmButton;
+
+  /// No description provided for @intensityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose wake intensity'**
+  String get intensityTitle;
+
+  /// No description provided for @navAlarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm'**
+  String get navAlarm;
+
+  /// No description provided for @navSounds.
+  ///
+  /// In en, this message translates to:
+  /// **'Sounds'**
+  String get navSounds;
 }
 
 class _AppLocalizationsDelegate

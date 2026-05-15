@@ -28,6 +28,11 @@
   "statusPlayerErrorPrefix": "播放器错误：",
   "alarmArmed": "闹钟已设置",
   "wakeUpTitle": "起床啦！😺",
+  "homeQuestion": "你的猫咪应该几点叫醒你？",
+  "setAlarmButton": "设置闹钟",
+  "intensityTitle": "选择唤醒强度",
+  "navAlarm": "闹钟",
+  "navSounds": "声音",
   "@appTitle": {
     "description": "App title shown in the app bar"
   },

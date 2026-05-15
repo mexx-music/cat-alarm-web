@@ -91,4 +91,19 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get wakeUpTitle => 'Aufwachen! 😺';
+
+  @override
+  String get homeQuestion => 'Wann soll deine Katze dich wecken?';
+
+  @override
+  String get setAlarmButton => 'Wecker stellen';
+
+  @override
+  String get intensityTitle => 'Weckintensität wählen';
+
+  @override
+  String get navAlarm => 'Wecker';
+
+  @override
+  String get navSounds => 'Klänge';
 }

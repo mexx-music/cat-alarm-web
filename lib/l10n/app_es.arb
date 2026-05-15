@@ -28,6 +28,11 @@
   "statusPlayerErrorPrefix": "Error del reproductor: ",
   "alarmArmed": "Alarma establecida",
   "wakeUpTitle": "¡Despierta! 😺",
+  "homeQuestion": "¿Cuándo debería despertarte tu gato?",
+  "setAlarmButton": "Programar alarma",
+  "intensityTitle": "Elige la intensidad",
+  "navAlarm": "Alarma",
+  "navSounds": "Sonidos",
   "@appTitle": {
     "description": "App title shown in the app bar"
   },
