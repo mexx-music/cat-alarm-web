@@ -4,13 +4,14 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 
 /// WakelockManager: aktiviert WakelockPlus während [active] true ist.
-/// Zusätzlich dimmt es optional das Display auf [dimLevel] (Default 0.1)
-/// nach [autoDimAfter] (Default 2 Minuten). Bei Alarm-Start wird zusätzlich
-/// ein kurzer Boost auf 100% gesetzt (log: 'Brightness: alarm boost').
+/// Während aktiv wird das Display sofort auf [dimLevel] gedimmt (Default 0.06,
+/// nachttauglich, Uhr/Controls bleiben lesbar). Beim Deaktivieren wird die
+/// vorher gemessene Helligkeit wiederhergestellt. [autoDimAfter] kann optional
+/// eine Verzögerung erzwingen; null bedeutet sofortiges Dimmen.
 class WakelockManager extends StatefulWidget {
   final bool active;
 
-  /// Ziel-Dimm-Level (0.0 .. 1.0). Default: 0.1 (10%).
+  /// Ziel-Dimm-Level (0.0 .. 1.0). Default: 0.06 (nachttauglich).
   final double dimLevel;
 
   /// Wartezeit bis automatisch gedimmt wird. Wenn null -> sofort dimmen.
@@ -19,8 +20,8 @@ class WakelockManager extends StatefulWidget {
   const WakelockManager({
     Key? key,
     required this.active,
-    this.dimLevel = 0.1,
-    this.autoDimAfter = const Duration(minutes: 2),
+    this.dimLevel = 0.06,
+    this.autoDimAfter,
   }) : super(key: key);
 
   @override
@@ -74,16 +75,13 @@ class _WakelockManagerState extends State<WakelockManager> {
     }
   }
 
-  Future<void> _applyBoost() async {
+  Future<void> _ensurePreviousBrightness() async {
     if (!_brightnessSupported) return;
+    if (_previousBrightness != null) return;
     try {
-      // ensure we saved previous
-      _previousBrightness ??= await ScreenBrightness().current;
-      if (!mounted) return;
-      await ScreenBrightness().setScreenBrightness(1.0);
-      debugPrint('Brightness: alarm boost');
+      _previousBrightness = await ScreenBrightness().current;
     } catch (e) {
-      debugPrint('WakelockManager: failed to apply alarm boost: $e');
+      debugPrint('WakelockManager: failed to read current brightness: $e');
     }
   }
 
@@ -109,23 +107,19 @@ class _WakelockManagerState extends State<WakelockManager> {
         _isEnabled = true;
         debugPrint('WakelockManager: enabled');
 
-        // Alarm boost immediately
-        await _applyBoost();
+        // Remember the current brightness so we can restore it on exit.
+        await _ensurePreviousBrightness();
 
-        // Schedule dimming after autoDimAfter (or immediately if null)
-        final autoAfter = widget.autoDimAfter ?? const Duration(minutes: 2);
+        // Dim immediately unless an explicit delay was requested.
         if (widget.autoDimAfter == null) {
-          // user requested immediate dim
           await _applyDim(widget.dimLevel);
         } else {
-          // schedule timer to dim after autoAfter
-          _autoDimTimer = Timer(autoAfter, () async {
-            // Before dimming, ensure widget still mounted and enabled
+          _autoDimTimer = Timer(widget.autoDimAfter!, () async {
             if (!mounted || !_isEnabled) return;
             await _applyDim(widget.dimLevel);
           });
           debugPrint(
-              'WakelockManager: auto-dim scheduled in ${autoAfter.inSeconds}s');
+              'WakelockManager: auto-dim scheduled in ${widget.autoDimAfter!.inSeconds}s');
         }
       } else if (!enable && _isEnabled) {
         // disable wakelock
@@ -143,16 +137,15 @@ class _WakelockManagerState extends State<WakelockManager> {
         // already enabled, but dim level or timer may have changed
         _autoDimTimer?.cancel();
         _autoDimTimer = null;
-        final autoAfter = widget.autoDimAfter ?? const Duration(minutes: 2);
         if (widget.autoDimAfter == null) {
           await _applyDim(widget.dimLevel);
         } else {
-          _autoDimTimer = Timer(autoAfter, () async {
+          _autoDimTimer = Timer(widget.autoDimAfter!, () async {
             if (!mounted || !_isEnabled) return;
             await _applyDim(widget.dimLevel);
           });
           debugPrint(
-              'WakelockManager: auto-dim rescheduled in ${autoAfter.inSeconds}s');
+              'WakelockManager: auto-dim rescheduled in ${widget.autoDimAfter!.inSeconds}s');
         }
       }
     } catch (e) {

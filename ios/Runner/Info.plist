@@ -45,5 +45,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>LSApplicationCategoryType</key>
+	<string></string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Feline Alarm may use the microphone for sound and alarm-related audio features</string>
 </dict>
 </plist>

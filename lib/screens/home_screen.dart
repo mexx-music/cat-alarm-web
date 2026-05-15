@@ -12,6 +12,7 @@ import '../widgets/wakelock_manager.dart';
 import '../starfield.dart';
 import '../audio/cat_alarm_player.dart';
 import '../core/alarm_core.dart';
+import '../services/alarm_notifications.dart';
 import '../l10n/app_localizations.dart';
 
 class CatAlarmScreen extends StatefulWidget {
@@ -55,6 +56,9 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
     super.initState();
     // CatAlarmPlayer Aktivitäts-Tracking initialisieren
     CatAlarmPlayer.I.init();
+    // iOS-only: prepare local-notification scheduler so the alarm can fire
+    // while the screen is locked or the app is in the background.
+    AlarmNotifications.I.init();
     // Testplayer-Status tracken
     _testPlayer.playerStateStream.listen((s) {
       final playing = s.playing;
@@ -99,17 +103,31 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
 
   void _armFromHands() {
     unlockAudio(); // web: aktiviert AudioContext beim ersten Klick (fire-and-forget)
+    final now = DateTime.now();
+    var fire = DateTime(now.year, now.month, now.day, _hour, _minute);
+    if (!fire.isAfter(now)) {
+      fire = fire
+          .add(const Duration(days: 1)); // wenn Zeit heute schon vorbei ist → morgen
+    }
     setState(() {
       _userStopped = false;
-      final now = DateTime.now();
-      var fire = DateTime(now.year, now.month, now.day, _hour, _minute);
-      if (!fire.isAfter(now)) {
-        fire = fire.add(const Duration(
-            days: 1)); // wenn Zeit heute schon vorbei ist → morgen
-      }
       _fireAt = fire;
       _armed = true;
     });
+    _scheduleIosAlarmNotification(fire);
+  }
+
+  Future<void> _scheduleIosAlarmNotification(DateTime fireAt) async {
+    try {
+      await AlarmNotifications.I.requestPermissions();
+      final l10n = AppLocalizations.of(context);
+      final title = l10n?.appTitle ?? 'Cat Alarm';
+      final body = l10n?.wakeUpTitle ?? 'Wake up!';
+      await AlarmNotifications.I
+          .schedule(fireAt: fireAt, title: title, body: body);
+    } catch (e) {
+      debugPrint('iOS alarm notification scheduling failed: $e');
+    }
   }
 
   Future<void> _triggerAlarm() async {
@@ -136,6 +154,9 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
     } catch (e) {
       debugPrint('Fehler beim Entwaffnen: $e');
     }
+
+    // iOS-only: cancel any pending local notification so it cannot fire later.
+    AlarmNotifications.I.cancel();
 
     try {
       await _testPlayer.stop(); // Testplayer stoppen
