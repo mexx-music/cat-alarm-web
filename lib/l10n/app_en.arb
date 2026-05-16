@@ -33,6 +33,12 @@
   "intensityTitle": "Choose wake intensity",
   "navAlarm": "Alarm",
   "navSounds": "Sounds",
+  "armedGreeting": "Good night ❤",
+  "armedSubtitle": "Your cat will wake you gently",
+  "nowLabel": "Now",
+  "alarmAt": "Alarm at",
+  "wakesInLabel": "Your cat will wake you in",
+  "wakesInSoon": "soon",
   "@appTitle": {
     "description": "App title shown in the app bar"
   },

@@ -33,6 +33,12 @@
   "intensityTitle": "Elige la intensidad",
   "navAlarm": "Alarma",
   "navSounds": "Sonidos",
+  "armedGreeting": "Buenas noches ❤",
+  "armedSubtitle": "Tu gato te despertará con cariño",
+  "nowLabel": "Ahora",
+  "alarmAt": "Alarma a las",
+  "wakesInLabel": "Tu gato te despertará en",
+  "wakesInSoon": "pronto",
   "@appTitle": {
     "description": "App title shown in the app bar"
   },

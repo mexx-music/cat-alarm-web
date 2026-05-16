@@ -106,6 +106,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get navSounds => '声音';
+
+  @override
+  String get armedGreeting => '晚安 ❤';
+
+  @override
+  String get armedSubtitle => '你的猫咪会温柔地叫醒你';
+
+  @override
+  String get nowLabel => '现在';
+
+  @override
+  String get alarmAt => '闹钟时间';
+
+  @override
+  String get wakesInLabel => '你的猫咪将在';
+
+  @override
+  String get wakesInSoon => '马上';
 }
 
 /// The translations for Chinese, as used in China (`zh_CN`).
@@ -210,4 +228,22 @@ class AppLocalizationsZhCn extends AppLocalizationsZh {
 
   @override
   String get navSounds => '声音';
+
+  @override
+  String get armedGreeting => '晚安 ❤';
+
+  @override
+  String get armedSubtitle => '你的猫咪会温柔地叫醒你';
+
+  @override
+  String get nowLabel => '现在';
+
+  @override
+  String get alarmAt => '闹钟时间';
+
+  @override
+  String get wakesInLabel => '你的猫咪将在';
+
+  @override
+  String get wakesInSoon => '马上';
 }

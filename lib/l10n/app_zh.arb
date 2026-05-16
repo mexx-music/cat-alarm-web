@@ -33,6 +33,12 @@
   "intensityTitle": "选择唤醒强度",
   "navAlarm": "闹钟",
   "navSounds": "声音",
+  "armedGreeting": "晚安 ❤",
+  "armedSubtitle": "你的猫咪会温柔地叫醒你",
+  "nowLabel": "现在",
+  "alarmAt": "闹钟时间",
+  "wakesInLabel": "你的猫咪将在",
+  "wakesInSoon": "马上",
   "@appTitle": {
     "description": "App title shown in the app bar"
   },

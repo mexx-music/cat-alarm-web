@@ -33,6 +33,12 @@
   "intensityTitle": "Weckintensität wählen",
   "navAlarm": "Wecker",
   "navSounds": "Klänge",
+  "armedGreeting": "Gute Nacht ❤",
+  "armedSubtitle": "Deine Katze wacht für dich auf",
+  "nowLabel": "Jetzt",
+  "alarmAt": "Wecker um",
+  "wakesInLabel": "Deine Katze weckt dich in",
+  "wakesInSoon": "gleich",
   "@appTitle": {
     "description": "App title shown in the app bar"
   },

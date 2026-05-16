@@ -300,6 +300,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sounds'**
   String get navSounds;
+
+  /// No description provided for @armedGreeting.
+  ///
+  /// In en, this message translates to:
+  /// **'Good night ❤'**
+  String get armedGreeting;
+
+  /// No description provided for @armedSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your cat will wake you gently'**
+  String get armedSubtitle;
+
+  /// No description provided for @nowLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get nowLabel;
+
+  /// No description provided for @alarmAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm at'**
+  String get alarmAt;
+
+  /// No description provided for @wakesInLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your cat will wake you in'**
+  String get wakesInLabel;
+
+  /// No description provided for @wakesInSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'soon'**
+  String get wakesInSoon;
 }
 
 class _AppLocalizationsDelegate

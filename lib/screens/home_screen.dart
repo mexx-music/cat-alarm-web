@@ -192,6 +192,7 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
                   hour: _hour,
                   minute: _minute,
                   now: _now,
+                  fireAt: _fireAt,
                   onStop: _handleStop,
                 );
               }
@@ -336,100 +337,301 @@ class _AlarmRingingScreenState extends State<_AlarmRingingScreen> {
   }
 }
 
-// ── Armed-Screen (Fullscreen) ──────────────────────────────────────────────
+// ── Armed-Screen (cozy night layout) ───────────────────────────────────────
 class _ArmedScreen extends StatelessWidget {
   const _ArmedScreen({
     required this.hour,
     required this.minute,
     required this.now,
+    required this.fireAt,
     required this.onStop,
   });
 
   final int hour;
   final int minute;
   final DateTime now;
+  final DateTime? fireAt;
   final VoidCallback onStop;
 
-  String get _time24h =>
+  static const Color _warmGold = Color(0xFFE8C28A);
+  static const Color _warmAmber = Color(0xFFE8A65A);
+
+  String get _alarmTimeText =>
       '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
 
-  String get _currentTime =>
-      '${now.hour.toString().padLeft(2, '0')}'
-      ':${now.minute.toString().padLeft(2, '0')}'
-      ':${now.second.toString().padLeft(2, '0')}';
+  String get _nowTimeText =>
+      '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
-    final screenH = MediaQuery.of(context).size.height;
-    final imgHeight = (screenH * 0.32).clamp(220.0, 300.0);
-    return SafeArea(
+    final l10n = AppLocalizations.of(context)!;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // 1) Immersive cat photo, anchored to bottom, top-fading to transparent
+        Positioned.fill(
+          child: ShaderMask(
+            blendMode: BlendMode.dstIn,
+            shaderCallback: (Rect bounds) {
+              return const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: <Color>[
+                  Color(0x00FFFFFF),
+                  Color(0x66FFFFFF),
+                  Color(0xFFFFFFFF),
+                  Color(0xFFFFFFFF),
+                ],
+                stops: <double>[0.0, 0.22, 0.42, 1.0],
+              ).createShader(bounds);
+            },
+            child: Image.asset(
+              'assets/images/catwait.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.bottomCenter,
+            ),
+          ),
+        ),
+        // 2) Soft dark wash on top for legibility of the headline
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    const Color(0xFF0E0B22).withAlpha(180),
+                    const Color(0xFF0E0B22).withAlpha(0),
+                  ],
+                  stops: const [0.0, 0.45],
+                ),
+              ),
+            ),
+          ),
+        ),
+        // 3) Content
+        SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 8),
+              _ArmedHeader(
+                greeting: l10n.armedGreeting,
+                subtitle: l10n.armedSubtitle,
+                nowLabel: l10n.nowLabel,
+                nowTimeText: _nowTimeText,
+                alarmLabel: l10n.alarmAt,
+                alarmTimeText: _alarmTimeText,
+                remainingText: _buildRemainingText(l10n),
+              ),
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: _CozyStopButton(
+                  label: l10n.stopButton,
+                  onTap: onStop,
+                ),
+              ),
+              const SizedBox(height: 18),
+              const _BottomNavStrip(),
+              const SizedBox(height: 6),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String? _buildRemainingText(AppLocalizations l10n) {
+    final fire = fireAt;
+    if (fire == null) return null;
+    final diff = fire.difference(now);
+    if (diff.isNegative) return null;
+    final h = diff.inHours;
+    final m = diff.inMinutes.remainder(60);
+    final String duration;
+    if (h <= 0 && m <= 0) {
+      duration = l10n.wakesInSoon;
+    } else if (h <= 0) {
+      duration = '${m}m';
+    } else {
+      duration = '${h}h ${m}m';
+    }
+    return '${l10n.wakesInLabel} $duration';
+  }
+}
+
+class _ArmedHeader extends StatelessWidget {
+  const _ArmedHeader({
+    required this.greeting,
+    required this.subtitle,
+    required this.nowLabel,
+    required this.nowTimeText,
+    required this.alarmLabel,
+    required this.alarmTimeText,
+    required this.remainingText,
+  });
+
+  final String greeting;
+  final String subtitle;
+  final String nowLabel;
+  final String nowTimeText;
+  final String alarmLabel;
+  final String alarmTimeText;
+  final String? remainingText;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Dezente aktuelle Uhrzeit oben
+          const Icon(Icons.nightlight_round,
+              color: _ArmedScreen._warmGold, size: 22),
+          const SizedBox(height: 6),
           Text(
-            _currentTime,
+            greeting,
+            textAlign: TextAlign.center,
             style: const TextStyle(
+              color: _ArmedScreen._warmGold,
               fontSize: 15,
-              color: Color.fromRGBO(255, 255, 255, 0.65),
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withAlpha(170),
+              fontSize: 13,
               fontWeight: FontWeight.w400,
-              letterSpacing: 1.5,
+              letterSpacing: 0.2,
+              height: 1.3,
             ),
           ),
           const SizedBox(height: 12),
-          // Sleepcat-Bild (ersetzt ClockView im Armed-Zustand)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: Image.asset(
-              'assets/images/sleepcat.png',
-              height: imgHeight,
-              fit: BoxFit.cover,
+          // "Jetzt 23:14" – aktuelle Uhrzeit, subtil
+          Text(
+            '$nowLabel $nowTimeText',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: _ArmedScreen._warmGold.withAlpha(140),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 1.0,
             ),
           ),
-          const SizedBox(height: 28),
-          const Icon(Icons.nightlight_round,
-              size: 48, color: Color(0xFFB0C4DE)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
+          // Kleines Label über der großen Weckzeit
           Text(
-            AppLocalizations.of(context)!.alarmArmed,
-            style: const TextStyle(
-              fontSize: 20,
-              color: Colors.white70,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.2,
+            alarmLabel,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withAlpha(150),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 2.0,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
+          // Große Weckzeit mit warmem Glow
           Text(
-            _time24h,
-            style: const TextStyle(
-              fontSize: 64,
+            alarmTimeText,
+            textAlign: TextAlign.center,
+            style: TextStyle(
               color: Colors.white,
-              fontWeight: FontWeight.w800,
+              fontSize: 60,
+              fontWeight: FontWeight.w300,
               letterSpacing: 4,
-            ),
-          ),
-          const SizedBox(height: 40),
-          SizedBox(
-            width: 220,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: onStop,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28),
+              height: 1.0,
+              shadows: [
+                Shadow(
+                  color: _ArmedScreen._warmAmber.withAlpha(140),
+                  blurRadius: 24,
                 ),
+                Shadow(
+                  color: _ArmedScreen._warmAmber.withAlpha(70),
+                  blurRadius: 40,
+                ),
+              ],
+            ),
+          ),
+          if (remainingText != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              remainingText!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withAlpha(180),
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+                letterSpacing: 0.3,
+                height: 1.3,
               ),
-              child: Text(
-                AppLocalizations.of(context)!.stopButton,
-                style:
-                    const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CozyStopButton extends StatelessWidget {
+  const _CozyStopButton({required this.label, required this.onTap});
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 58,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30),
+          gradient: const LinearGradient(
+            colors: [Color(0xFFF4D8B0), Color(0xFFE6B47A)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFE6B47A).withAlpha(120),
+              blurRadius: 26,
+              spreadRadius: 1,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          borderRadius: BorderRadius.circular(30),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.stop_circle_outlined,
+                      color: Color(0xFF3B2412), size: 22),
+                  const SizedBox(width: 10),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: Color(0xFF3B2412),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 17,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }

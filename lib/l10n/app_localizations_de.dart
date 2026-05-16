@@ -106,4 +106,22 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get navSounds => 'Klänge';
+
+  @override
+  String get armedGreeting => 'Gute Nacht ❤';
+
+  @override
+  String get armedSubtitle => 'Deine Katze wacht für dich auf';
+
+  @override
+  String get nowLabel => 'Jetzt';
+
+  @override
+  String get alarmAt => 'Wecker um';
+
+  @override
+  String get wakesInLabel => 'Deine Katze weckt dich in';
+
+  @override
+  String get wakesInSoon => 'gleich';
 }
