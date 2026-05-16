@@ -126,6 +126,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wakesInSoon => 'soon';
 
   @override
+  String get nightTapToWake => 'Tap to wake';
+
+  @override
   String get goodMorning => 'Good morning';
 
   @override

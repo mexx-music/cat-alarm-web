@@ -126,6 +126,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get wakesInSoon => '马上';
 
   @override
+  String get nightTapToWake => '点击唤醒';
+
+  @override
   String get goodMorning => '早上好';
 
   @override
@@ -264,6 +267,9 @@ class AppLocalizationsZhCn extends AppLocalizationsZh {
 
   @override
   String get wakesInSoon => '马上';
+
+  @override
+  String get nightTapToWake => '点击唤醒';
 
   @override
   String get goodMorning => '早上好';

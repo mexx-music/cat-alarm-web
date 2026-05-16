@@ -33,6 +33,13 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
   // NEU: verhindert Re-Arm/Trigger nach STOP
   bool _userStopped = false;
 
+  // Night-mode (Battery-Saver) während Armed:
+  // wird nach [_nightModeDelay] ab _armedSince automatisch true,
+  // beim Stop/Snooze/Trigger zurückgesetzt.
+  static const Duration _nightModeDelay = Duration(minutes: 10);
+  DateTime? _armedSince;
+  bool _nightMode = false;
+
   // State
   AlarmMix _selectedMix = AlarmMix.standard;
 
@@ -65,30 +72,56 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
         setState(() => _isTesting = playing);
       }
     });
-    // Uhrzeit regelmäßig aktualisieren
+    // Uhrzeit regelmäßig aktualisieren — Sekunden-genau für Trigger-Präzision,
+    // aber UI-Rebuilds nur dann, wenn die Anzeige sie braucht (Battery-Saver
+    // im Night-Mode: rebuild nur bei Minutenwechsel).
     Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) t.cancel();
-      setState(() {
-        _now = DateTime.now();
-      });
+      final now = DateTime.now();
 
       // Wenn Nutzer gestoppt hat, nie wieder automatisch starten
       if (_userStopped) {
-        print('Timer: userStopped=true -> keine Aktionen');
         return;
       }
 
       // Automatischer Alarm-Check
-      print('Timer: _armed=$_armed, _fireAt=$_fireAt, _now=$_now');
-      if (_armed && _fireAt != null && _now.compareTo(_fireAt!) >= 0) {
-        // *** WICHTIG: erst entwaffnen, dann triggern ***
+      if (_armed && _fireAt != null && now.compareTo(_fireAt!) >= 0) {
         final fireAt = _fireAt;
         setState(() {
           _armed = false;
           _fireAt = null;
+          _now = now;
+          _nightMode = false;
+          _armedSince = null;
         });
         print('ALARM ausgelöst! fireAt=$fireAt');
         _trigger(); // async, nutzt Latch im Player
+        return;
+      }
+
+      // 10-Minuten-Schwelle → Night-Mode aktivieren
+      if (_armed &&
+          _armedSince != null &&
+          !_nightMode &&
+          now.difference(_armedSince!) >= _nightModeDelay) {
+        setState(() {
+          _now = now;
+          _nightMode = true;
+        });
+        return;
+      }
+
+      // Regulärer Tick: rebuild abhängig vom Mode
+      if (_nightMode) {
+        // Night-Mode: nur bei Minutenwechsel rebuilden (Battery)
+        if (now.minute != _now.minute) {
+          setState(() => _now = now);
+        } else {
+          _now = now; // intern weiterführen, kein Rebuild
+        }
+      } else {
+        // Normal: jede Sekunde rebuilden (Setup-Mini-Uhr braucht das)
+        setState(() => _now = now);
       }
     });
   }
@@ -112,8 +145,20 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
       _userStopped = false;
       _fireAt = fire;
       _armed = true;
+      _armedSince = now;
+      _nightMode = false;
     });
     _scheduleIosAlarmNotification(fire);
+  }
+
+  // Vom Night-Mode-Screen aufgerufen: User tippt → zurück zum Armed-View.
+  // Die 10-Minuten-Countdown läuft ab jetzt neu.
+  void _exitNightMode() {
+    if (!_nightMode) return;
+    setState(() {
+      _nightMode = false;
+      _armedSince = DateTime.now();
+    });
   }
 
   Future<void> _scheduleIosAlarmNotification(DateTime fireAt) async {
@@ -167,6 +212,8 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
       _fireAt = null;
       _isTesting = false;
       _userStopped = true; // blockt weitere Timer-Aktionen
+      _nightMode = false;
+      _armedSince = null;
     });
 
     print('Alle Player gestoppt & entwaffnet');
@@ -196,6 +243,8 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
       _fireAt = fire;
       _armed = true;
       _isTesting = false;
+      _armedSince = DateTime.now();
+      _nightMode = false;
     });
     _scheduleIosAlarmNotification(fire);
   }
@@ -206,8 +255,12 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          WakelockManager(active: _armed || _isTesting),
-          const Positioned.fill(child: Starfield()),
+          WakelockManager(
+            active: _armed || _isTesting,
+            dimLevel: _nightMode ? 0.02 : 0.06,
+          ),
+          // Starfield (Animation) im Night-Mode deaktivieren → Battery-Saver
+          if (!_nightMode) const Positioned.fill(child: Starfield()),
           const PwaInstallButton(),
           ValueListenableBuilder<bool>(
             valueListenable: CatAlarmPlayer.I.isActive,
@@ -221,6 +274,14 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
                 );
               }
               if (_armed) {
+                if (_nightMode) {
+                  return _NightModeScreen(
+                    hour: _hour,
+                    minute: _minute,
+                    now: _now,
+                    onTap: _exitNightMode,
+                  );
+                }
                 return _ArmedScreen(
                   hour: _hour,
                   minute: _minute,
@@ -1258,6 +1319,87 @@ class _NavItem extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Night-Mode-Screen (ultra-dark, minimal, no animations) ─────────────────
+// Wird nach 10 Minuten Armed-Zustand automatisch aktiv. Komplett statisch:
+// kein Bild, kein Gradient, kein ShaderMask, kein InkWell, keine Animation.
+// Tap-anywhere reaktiviert den normalen Armed-View und startet den
+// 10-Minuten-Countdown neu.
+class _NightModeScreen extends StatelessWidget {
+  const _NightModeScreen({
+    required this.hour,
+    required this.minute,
+    required this.now,
+    required this.onTap,
+  });
+
+  final int hour;
+  final int minute;
+  final DateTime now;
+  final VoidCallback onTap;
+
+  static const Color _nightBg = Color(0xFF050308);
+  static const Color _nightInk = Color(0xFFE8C28A);
+
+  String get _alarmTime =>
+      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+
+  String get _nowTime =>
+      '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: ColoredBox(
+        color: _nightBg,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _nowTime,
+                  style: TextStyle(
+                    color: _nightInk.withAlpha(70),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 2.0,
+                    height: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  _alarmTime,
+                  style: TextStyle(
+                    color: _nightInk.withAlpha(140),
+                    fontSize: 44,
+                    fontWeight: FontWeight.w300,
+                    letterSpacing: 4,
+                    height: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  l10n.nightTapToWake,
+                  style: TextStyle(
+                    color: _nightInk.withAlpha(45),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 1.6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

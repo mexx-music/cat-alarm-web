@@ -337,6 +337,12 @@ abstract class AppLocalizations {
   /// **'soon'**
   String get wakesInSoon;
 
+  /// No description provided for @nightTapToWake.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to wake'**
+  String get nightTapToWake;
+
   /// No description provided for @goodMorning.
   ///
   /// In en, this message translates to:
