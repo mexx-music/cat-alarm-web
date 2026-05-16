@@ -124,4 +124,22 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get wakesInSoon => 'gleich';
+
+  @override
+  String get goodMorning => 'Guten Morgen';
+
+  @override
+  String get wokeYou => 'Deine Katze hat dich geweckt';
+
+  @override
+  String get timeToWake => 'Zeit aufzustehen!';
+
+  @override
+  String get iAmAwake => 'Ich bin wach';
+
+  @override
+  String get snooze5 => 'Noch 5 Minuten';
+
+  @override
+  String get morningTagline => 'Jeder Morgen ist schöner mit deiner Katze.';
 }

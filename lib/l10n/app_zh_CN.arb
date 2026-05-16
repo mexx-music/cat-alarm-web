@@ -39,6 +39,12 @@
   "alarmAt": "闹钟时间",
   "wakesInLabel": "你的猫咪将在",
   "wakesInSoon": "马上",
+  "goodMorning": "早上好",
+  "wokeYou": "你的猫咪把你叫醒了",
+  "timeToWake": "该起床啦！",
+  "iAmAwake": "我醒了",
+  "snooze5": "再睡 5 分钟",
+  "morningTagline": "有猫咪陪伴，每个早晨都更美好。",
   "@appTitle": {
     "description": "App title shown in the app bar"
   },

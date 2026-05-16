@@ -39,6 +39,12 @@
   "alarmAt": "Alarm at",
   "wakesInLabel": "Your cat will wake you in",
   "wakesInSoon": "soon",
+  "goodMorning": "Good morning",
+  "wokeYou": "Your cat woke you up",
+  "timeToWake": "Time to get up!",
+  "iAmAwake": "I'm awake",
+  "snooze5": "5 more minutes",
+  "morningTagline": "Every morning is brighter with your cat.",
   "@appTitle": {
     "description": "App title shown in the app bar"
   },

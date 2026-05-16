@@ -336,6 +336,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'soon'**
   String get wakesInSoon;
+
+  /// No description provided for @goodMorning.
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning'**
+  String get goodMorning;
+
+  /// No description provided for @wokeYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Your cat woke you up'**
+  String get wokeYou;
+
+  /// No description provided for @timeToWake.
+  ///
+  /// In en, this message translates to:
+  /// **'Time to get up!'**
+  String get timeToWake;
+
+  /// No description provided for @iAmAwake.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m awake'**
+  String get iAmAwake;
+
+  /// No description provided for @snooze5.
+  ///
+  /// In en, this message translates to:
+  /// **'5 more minutes'**
+  String get snooze5;
+
+  /// No description provided for @morningTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Every morning is brighter with your cat.'**
+  String get morningTagline;
 }
 
 class _AppLocalizationsDelegate

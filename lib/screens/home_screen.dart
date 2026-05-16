@@ -172,6 +172,34 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
     print('Alle Player gestoppt & entwaffnet');
   }
 
+  // Snooze: stoppt nur den aktuellen Klingelton und legt einen neuen
+  // Weckzeitpunkt in 5 Minuten an. Nutzt ausschließlich bestehende
+  // Primitives (stopAll, _scheduleIosAlarmNotification, der vorhandene
+  // 1-Sekunden-Timer im initState löst dann erneut aus).
+  void _handleSnooze() async {
+    debugPrint('Snooze getappt');
+    try {
+      await CatAlarmPlayer.I.stopAll();
+    } catch (e) {
+      debugPrint('Snooze stop error: $e');
+    }
+    try {
+      await _testPlayer.stop();
+      await _testPlayer.setLoopMode(LoopMode.off);
+    } catch (_) {}
+    // iOS: alte Notification löschen, neue wird gleich darunter geplant.
+    await AlarmNotifications.I.cancel();
+
+    final fire = DateTime.now().add(const Duration(minutes: 5));
+    setState(() {
+      _userStopped = false;
+      _fireAt = fire;
+      _armed = true;
+      _isTesting = false;
+    });
+    _scheduleIosAlarmNotification(fire);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -185,7 +213,12 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
             valueListenable: CatAlarmPlayer.I.isActive,
             builder: (context, playerActive, _) {
               if (playerActive && !_armed) {
-                return _AlarmRingingScreen(onStop: _handleStop, hour: _hour, minute: _minute);
+                return _AlarmRingingScreen(
+                  onStop: _handleStop,
+                  onSnooze: _handleSnooze,
+                  hour: _hour,
+                  minute: _minute,
+                );
               }
               if (_armed) {
                 return _ArmedScreen(
@@ -225,113 +258,314 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
   }
 }
 
-// ── Alarm-klingelt-Screen ──────────────────────────────────────────────────
-class _AlarmRingingScreen extends StatefulWidget {
-  const _AlarmRingingScreen({required this.onStop, required this.hour, required this.minute});
+// ── Alarm-klingelt-Screen (cozy sunrise layout) ────────────────────────────
+class _AlarmRingingScreen extends StatelessWidget {
+  const _AlarmRingingScreen({
+    required this.onStop,
+    required this.onSnooze,
+    required this.hour,
+    required this.minute,
+  });
+
   final VoidCallback onStop;
+  final VoidCallback onSnooze;
   final int hour;
   final int minute;
 
-  @override
-  State<_AlarmRingingScreen> createState() => _AlarmRingingScreenState();
-}
-
-class _AlarmRingingScreenState extends State<_AlarmRingingScreen> {
-  bool _showFirst = true;
-  late final Timer _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(milliseconds: 600), (_) {
-      if (mounted) setState(() => _showFirst = !_showFirst);
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
+  static const Color _warmGold = Color(0xFFE8C28A);
+  static const Color _warmAmber = Color(0xFFE8A65A);
 
   String get _alarmTime =>
-      '${widget.hour.toString().padLeft(2, '0')}:${widget.minute.toString().padLeft(2, '0')}';
+      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return SafeArea(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SizedBox(
-            height: 260,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: Image.asset(
-                    _showFirst
-                        ? 'assets/images/wakeupcat1.png'
-                        : 'assets/images/wakeupcat2.png',
-                    key: ValueKey(_showFirst),
-                    height: 260,
-                    fit: BoxFit.contain,
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // 1) Sunrise photo, anchored bottom, top-fading to transparent
+        Positioned.fill(
+          child: ShaderMask(
+            blendMode: BlendMode.dstIn,
+            shaderCallback: (Rect bounds) {
+              return const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: <Color>[
+                  Color(0x00FFFFFF),
+                  Color(0x66FFFFFF),
+                  Color(0xFFFFFFFF),
+                  Color(0xFFFFFFFF),
+                ],
+                stops: <double>[0.0, 0.18, 0.36, 1.0],
+              ).createShader(bounds);
+            },
+            child: Image.asset(
+              'assets/images/goodmorningcat.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.bottomCenter,
+            ),
+          ),
+        ),
+        // 2) Warm sunrise glow wash at top for headline legibility
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    const Color(0xFF1B1638).withAlpha(150),
+                    const Color(0xFF1B1638).withAlpha(0),
+                  ],
+                  stops: const [0.0, 0.45],
+                ),
+              ),
+            ),
+          ),
+        ),
+        // 3) Content
+        SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 6),
+              _RingingHeader(
+                greeting: l10n.goodMorning,
+                subtitle: l10n.wokeYou,
+                alarmTime: _alarmTime,
+                timeToWake: l10n.timeToWake,
+              ),
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: _IAmAwakeButton(
+                  label: l10n.iAmAwake,
+                  onTap: onStop,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: _SnoozeButton(
+                  label: l10n.snooze5,
+                  onTap: onSnooze,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: Text(
+                  '❤  ${l10n.morningTagline}',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white.withAlpha(150),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: 0.2,
                   ),
                 ),
-                Positioned(
-                  bottom: 10,
-                  left: 0,
-                  right: 0,
-                  child: Text(
-                    _alarmTime,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 38,
-                      fontWeight: FontWeight.w900,
-                      color: Color(0xFFFF4500),
-                      letterSpacing: 4,
-                      shadows: [
-                        Shadow(color: Color(0xFFFF4500), blurRadius: 16),
-                        Shadow(color: Color(0xFFFF8C00), blurRadius: 8),
-                      ],
-                    ),
-                  ),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RingingHeader extends StatelessWidget {
+  const _RingingHeader({
+    required this.greeting,
+    required this.subtitle,
+    required this.alarmTime,
+    required this.timeToWake,
+  });
+
+  final String greeting;
+  final String subtitle;
+  final String alarmTime;
+  final String timeToWake;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 4, 24, 0),
+      child: Column(
+        children: [
+          Icon(Icons.wb_sunny_rounded,
+              color: _AlarmRingingScreen._warmGold.withAlpha(220), size: 22),
+          const SizedBox(height: 6),
+          Text.rich(
+            TextSpan(children: [
+              TextSpan(text: greeting),
+              const TextSpan(text: '  ☀️'),
+            ]),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '$subtitle 🐾',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withAlpha(190),
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              letterSpacing: 0.2,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            alarmTime,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 64,
+              fontWeight: FontWeight.w300,
+              letterSpacing: 4,
+              height: 1.0,
+              shadows: [
+                Shadow(
+                  color: _AlarmRingingScreen._warmAmber.withAlpha(170),
+                  blurRadius: 26,
+                ),
+                Shadow(
+                  color: _AlarmRingingScreen._warmAmber.withAlpha(90),
+                  blurRadius: 44,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 6),
           Text(
-            l10n.wakeUpTitle,
-            style: const TextStyle(
-              fontSize: 26,
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.0,
-            ),
-          ),
-          const SizedBox(height: 40),
-          SizedBox(
-            width: 220,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: widget.onStop,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(28),
-                ),
-              ),
-              child: Text(
-                l10n.stopButton,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-              ),
+            '$timeToWake ❤',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withAlpha(180),
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.3,
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _IAmAwakeButton extends StatelessWidget {
+  const _IAmAwakeButton({required this.label, required this.onTap});
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 60,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(32),
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFCE0AC), Color(0xFFE9B270)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFE9B270).withAlpha(150),
+              blurRadius: 32,
+              spreadRadius: 1,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          borderRadius: BorderRadius.circular(32),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.pets_rounded,
+                      color: Color(0xFF3B2412), size: 22),
+                  const SizedBox(width: 10),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      color: Color(0xFF3B2412),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 17,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SnoozeButton extends StatelessWidget {
+  const _SnoozeButton({required this.label, required this.onTap});
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: Material(
+        color: const Color(0xFF1F1B36).withAlpha(180),
+        borderRadius: BorderRadius.circular(28),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                  color: Colors.white.withAlpha(30), width: 1),
+            ),
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.nightlight_round,
+                      color: _AlarmRingingScreen._warmGold.withAlpha(210),
+                      size: 18),
+                  const SizedBox(width: 10),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: Colors.white.withAlpha(220),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

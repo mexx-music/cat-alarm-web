@@ -39,6 +39,12 @@
   "alarmAt": "Wecker um",
   "wakesInLabel": "Deine Katze weckt dich in",
   "wakesInSoon": "gleich",
+  "goodMorning": "Guten Morgen",
+  "wokeYou": "Deine Katze hat dich geweckt",
+  "timeToWake": "Zeit aufzustehen!",
+  "iAmAwake": "Ich bin wach",
+  "snooze5": "Noch 5 Minuten",
+  "morningTagline": "Jeder Morgen ist schöner mit deiner Katze.",
   "@appTitle": {
     "description": "App title shown in the app bar"
   },

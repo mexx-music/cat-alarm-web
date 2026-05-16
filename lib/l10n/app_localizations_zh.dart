@@ -124,6 +124,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get wakesInSoon => '马上';
+
+  @override
+  String get goodMorning => '早上好';
+
+  @override
+  String get wokeYou => '你的猫咪把你叫醒了';
+
+  @override
+  String get timeToWake => '该起床啦！';
+
+  @override
+  String get iAmAwake => '我醒了';
+
+  @override
+  String get snooze5 => '再睡 5 分钟';
+
+  @override
+  String get morningTagline => '有猫咪陪伴，每个早晨都更美好。';
 }
 
 /// The translations for Chinese, as used in China (`zh_CN`).
@@ -246,4 +264,22 @@ class AppLocalizationsZhCn extends AppLocalizationsZh {
 
   @override
   String get wakesInSoon => '马上';
+
+  @override
+  String get goodMorning => '早上好';
+
+  @override
+  String get wokeYou => '你的猫咪把你叫醒了';
+
+  @override
+  String get timeToWake => '该起床啦！';
+
+  @override
+  String get iAmAwake => '我醒了';
+
+  @override
+  String get snooze5 => '再睡 5 分钟';
+
+  @override
+  String get morningTagline => '有猫咪陪伴，每个早晨都更美好。';
 }

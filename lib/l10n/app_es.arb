@@ -39,6 +39,12 @@
   "alarmAt": "Alarma a las",
   "wakesInLabel": "Tu gato te despertará en",
   "wakesInSoon": "pronto",
+  "goodMorning": "Buenos días",
+  "wokeYou": "Tu gato te ha despertado",
+  "timeToWake": "¡Hora de levantarse!",
+  "iAmAwake": "Estoy despierto",
+  "snooze5": "5 minutos más",
+  "morningTagline": "Cada mañana es mejor con tu gato.",
   "@appTitle": {
     "description": "App title shown in the app bar"
   },
