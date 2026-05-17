@@ -8,12 +8,25 @@ class ClockView extends StatefulWidget {
   final void Function(int hour, int minute) onTimeChanged;
   final DateTime? now;
 
+  /// Wenn false, wird das große Sleepcat-Bild im Zifferblatt NICHT gerendert
+  /// (z. B. iPad-Hochformat, wo der Vordergrund-Background bereits eine
+  /// Katze zeigt). iPhone-Aufrufe ohne Wert behalten true → Verhalten
+  /// unverändert.
+  final bool showCatImage;
+
+  /// Skalierungsfaktor für die kleine Live-Mini-Uhr in der Mitte.
+  /// 1.0 = bisherige Größe (iPhone). Werte < 1 verkleinern sie ohne die
+  /// äußere Uhr zu verändern.
+  final double miniClockScale;
+
   const ClockView({
     super.key,
     required this.hour,
     required this.minute,
     required this.onTimeChanged,
     this.now,
+    this.showCatImage = true,
+    this.miniClockScale = 1.0,
   });
 
   @override
@@ -43,7 +56,7 @@ class _ClockViewState extends State<ClockView> {
       final center = Offset(maxW / 2, maxH / 2);
       final radius = size / 2;
       final catSize = math.max(0.0, size * 0.72);
-      final miniSize = math.min(80.0, size * 0.32);
+      final miniSize = math.min(80.0, size * 0.32) * widget.miniClockScale;
       return GestureDetector(
         behavior: HitTestBehavior.opaque,
         onPanStart: (d) => _onPanStart(d, center, radius),
@@ -53,38 +66,39 @@ class _ClockViewState extends State<ClockView> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              Positioned.fill(
-                child: AnimatedOpacity(
-                  opacity: _isDragging ? 0.0 : 1.0,
-                  duration: const Duration(milliseconds: 300),
-                  child: Align(
-                    alignment: const Alignment(0, 0.15),
-                    child: SizedBox(
-                      width: catSize,
-                      height: catSize,
-                      child: ShaderMask(
-                        blendMode: BlendMode.dstIn,
-                        shaderCallback: (Rect bounds) {
-                          return const RadialGradient(
-                            center: Alignment.center,
-                            radius: 0.5,
-                            colors: <Color>[
-                              Color(0xFFFFFFFF),
-                              Color(0xFFFFFFFF),
-                              Color(0x00FFFFFF),
-                            ],
-                            stops: <double>[0.0, 0.62, 1.0],
-                          ).createShader(bounds);
-                        },
-                        child: Image.asset(
-                          'assets/images/sleepcat.png',
-                          fit: BoxFit.cover,
+              if (widget.showCatImage)
+                Positioned.fill(
+                  child: AnimatedOpacity(
+                    opacity: _isDragging ? 0.0 : 1.0,
+                    duration: const Duration(milliseconds: 300),
+                    child: Align(
+                      alignment: const Alignment(0, 0.15),
+                      child: SizedBox(
+                        width: catSize,
+                        height: catSize,
+                        child: ShaderMask(
+                          blendMode: BlendMode.dstIn,
+                          shaderCallback: (Rect bounds) {
+                            return const RadialGradient(
+                              center: Alignment.center,
+                              radius: 0.5,
+                              colors: <Color>[
+                                Color(0xFFFFFFFF),
+                                Color(0xFFFFFFFF),
+                                Color(0x00FFFFFF),
+                              ],
+                              stops: <double>[0.0, 0.62, 1.0],
+                            ).createShader(bounds);
+                          },
+                          child: Image.asset(
+                            'assets/images/sleepcat.png',
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
               SizedBox(
                 width: size,
                 height: size,
