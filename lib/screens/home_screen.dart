@@ -272,6 +272,7 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
                   onSnooze: _handleSnooze,
                   hour: _hour,
                   minute: _minute,
+                  now: _now,
                 );
               }
               if (_armed) {
@@ -327,12 +328,14 @@ class _AlarmRingingScreen extends StatelessWidget {
     required this.onSnooze,
     required this.hour,
     required this.minute,
+    required this.now,
   });
 
   final VoidCallback onStop;
   final VoidCallback onSnooze;
   final int hour;
   final int minute;
+  final DateTime now;
 
   static const Color _warmGold = Color(0xFFE8C28A);
   static const Color _warmAmber = Color(0xFFE8A65A);
@@ -349,6 +352,7 @@ class _AlarmRingingScreen extends StatelessWidget {
         onSnooze: onSnooze,
         hour: hour,
         minute: minute,
+        now: now,
       );
     }
     // iPad-Querformat: großzügige Smart-Display-Komposition.
@@ -358,6 +362,7 @@ class _AlarmRingingScreen extends StatelessWidget {
         onSnooze: onSnooze,
         hour: hour,
         minute: minute,
+        now: now,
       );
     }
     // iPad-Hochformat: eigene cinematische Komposition. iPhone-Pfad unverändert.
@@ -367,6 +372,7 @@ class _AlarmRingingScreen extends StatelessWidget {
         onSnooze: onSnooze,
         hour: hour,
         minute: minute,
+        now: now,
       );
     }
     final l10n = AppLocalizations.of(context)!;
@@ -420,6 +426,14 @@ class _AlarmRingingScreen extends StatelessWidget {
           child: Column(
             children: [
               const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsets.only(right: 20),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: _CurrentClockReadout(now: now),
+                ),
+              ),
+              const SizedBox(height: 2),
               MaxContentBox(
                 child: _RingingHeader(
                   greeting: l10n.goodMorning,
@@ -723,7 +737,9 @@ class _ArmedScreen extends StatelessWidget {
       '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
 
   String get _nowTimeText =>
-      '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+      '${now.hour.toString().padLeft(2, '0')}:'
+      '${now.minute.toString().padLeft(2, '0')}:'
+      '${now.second.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
@@ -1131,6 +1147,13 @@ class _HomeSetupView extends StatelessWidget {
     return SafeArea(
       child: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 4, right: 20),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: _CurrentClockReadout(now: now),
+            ),
+          ),
           _Header(question: l10n.homeQuestion),
           Expanded(
             child: Padding(
@@ -1278,6 +1301,39 @@ class _TimeReadout extends StatelessWidget {
                 ),
               ]
             : null,
+      ),
+    );
+  }
+}
+
+// Kleine, dezente HH:mm:ss-Anzeige der aktuellen Systemzeit.
+// Wird auf allen relevanten Screens verwendet. Updated automatisch jede
+// Sekunde, weil `now` von `_CatAlarmScreenState._now` (1-Sek-Timer)
+// durchgereicht wird – keine eigenen Timer pro Widget.
+class _CurrentClockReadout extends StatelessWidget {
+  const _CurrentClockReadout({
+    required this.now,
+    this.fontSize = 12,
+  });
+  final DateTime now;
+  final double fontSize;
+
+  String get _formatted =>
+      '${now.hour.toString().padLeft(2, '0')}:'
+      '${now.minute.toString().padLeft(2, '0')}:'
+      '${now.second.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      _formatted,
+      style: TextStyle(
+        color: _HomeSetupView._warmGold.withAlpha(160),
+        fontSize: fontSize,
+        fontWeight: FontWeight.w500,
+        letterSpacing: 1.2,
+        height: 1.0,
+        fontFeatures: const [FontFeature.tabularFigures()],
       ),
     );
   }
@@ -1706,7 +1762,12 @@ class _TabletPortraitSetupLayout extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 28),
             child: Column(
               children: [
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: _CurrentClockReadout(now: now, fontSize: 13),
+                ),
+                const SizedBox(height: 4),
                 Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 600),
@@ -1883,7 +1944,9 @@ class _TabletPortraitArmedLayout extends StatelessWidget {
       '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
 
   String get _nowTimeText =>
-      '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+      '${now.hour.toString().padLeft(2, '0')}:'
+      '${now.minute.toString().padLeft(2, '0')}:'
+      '${now.second.toString().padLeft(2, '0')}';
 
   String? _buildRemainingText(AppLocalizations l10n) {
     final fire = fireAt;
@@ -2017,12 +2080,14 @@ class _TabletPortraitRingingLayout extends StatelessWidget {
     required this.onSnooze,
     required this.hour,
     required this.minute,
+    required this.now,
   });
 
   final VoidCallback onStop;
   final VoidCallback onSnooze;
   final int hour;
   final int minute;
+  final DateTime now;
 
   String get _alarmTime =>
       '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
@@ -2083,9 +2148,14 @@ class _TabletPortraitRingingLayout extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 28),
             child: Column(
               children: [
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: _CurrentClockReadout(now: now, fontSize: 13),
+                ),
                 // Header bewusst weit unten unter der StatusBar – kollidiert
                 // damit nicht mehr mit iOS-Notification-Bannern.
-                const SizedBox(height: 60),
+                const SizedBox(height: 32),
                 Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 640),
@@ -2226,6 +2296,10 @@ class _PhoneLandscapeSetupLayout extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: _CurrentClockReadout(now: now),
+                ),
                 // Top section: Uhr nach rechts angeordnet, AM/PM +
                 // Preview-Chip darunter. Links bleibt offen, damit die
                 // Katze aus dem Background sichtbar bleibt.
@@ -2341,7 +2415,9 @@ class _PhoneLandscapeArmedLayout extends StatelessWidget {
       '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
 
   String get _nowTimeText =>
-      '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+      '${now.hour.toString().padLeft(2, '0')}:'
+      '${now.minute.toString().padLeft(2, '0')}:'
+      '${now.second.toString().padLeft(2, '0')}';
 
   String? _buildRemainingText(AppLocalizations l10n) {
     final fire = fireAt;
@@ -2488,12 +2564,14 @@ class _PhoneLandscapeRingingLayout extends StatelessWidget {
     required this.onSnooze,
     required this.hour,
     required this.minute,
+    required this.now,
   });
 
   final VoidCallback onStop;
   final VoidCallback onSnooze;
   final int hour;
   final int minute;
+  final DateTime now;
 
   String get _alarmTime =>
       '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
@@ -2568,6 +2646,8 @@ class _PhoneLandscapeRingingLayout extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          _CurrentClockReadout(now: now),
+                          const SizedBox(height: 4),
                           _RingingHeader(
                             greeting: l10n.goodMorning,
                             subtitle: l10n.wokeYou,
@@ -2636,12 +2716,14 @@ class _TabletLandscapeRingingLayout extends StatelessWidget {
     required this.onSnooze,
     required this.hour,
     required this.minute,
+    required this.now,
   });
 
   final VoidCallback onStop;
   final VoidCallback onSnooze;
   final int hour;
   final int minute;
+  final DateTime now;
 
   String get _alarmTime =>
       '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
@@ -2718,6 +2800,8 @@ class _TabletLandscapeRingingLayout extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          _CurrentClockReadout(now: now, fontSize: 14),
+                          const SizedBox(height: 6),
                           _RingingHeader(
                             greeting: l10n.goodMorning,
                             subtitle: l10n.wokeYou,
@@ -2880,6 +2964,8 @@ class _TabletLandscapeSetupLayout extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          _CurrentClockReadout(now: now, fontSize: 13),
+                          const SizedBox(height: 6),
                           // Kompakter Titel
                           Text(
                             l10n.homeQuestion,

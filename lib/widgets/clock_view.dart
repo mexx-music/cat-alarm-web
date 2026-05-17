@@ -62,6 +62,7 @@ class _ClockViewState extends State<ClockView> {
         onPanStart: (d) => _onPanStart(d, center, radius),
         onPanUpdate: (d) => _onPanUpdate(d, center, radius),
         onPanEnd: _onPanEnd,
+        onPanCancel: _onPanCancel,
         child: SizedBox.expand(
           child: Stack(
             alignment: Alignment.center,
@@ -201,11 +202,27 @@ class _ClockViewState extends State<ClockView> {
   }
 
   void _onPanEnd(DragEndDetails d) {
+    _resetDragState();
+  }
+
+  // Wird vom Flutter-Gesture-System aufgerufen, wenn ein Drag abgebrochen
+  // wird (z. B. weil ein Eltern-Widget den Gestensieg übernimmt oder die
+  // App in den Hintergrund geht). Ohne diesen Handler bleiben Drag-Flags
+  // und _isDragging stehen und die Uhrzeiger reagieren erst nach einem
+  // App-Neustart wieder zuverlässig.
+  void _onPanCancel() {
+    _resetDragState();
+  }
+
+  void _resetDragState() {
     _dragHour = _dragMinute = false;
     _dragOffsetMinute = null;
     _dragOffsetHour = null;
     _prevMinute = null;
-    setState(() => _isDragging = false);
+    if (!mounted) return;
+    if (_isDragging) {
+      setState(() => _isDragging = false);
+    }
   }
 }
 
