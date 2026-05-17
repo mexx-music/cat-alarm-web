@@ -20,6 +20,13 @@ bool isPhoneLandscape(BuildContext context) {
   return s.shortestSide < 600 && s.width > s.height;
 }
 
+/// Tablet-Querformat (großes Querformat).
+/// shortestSide ≥ 600 = Tablet. width > height = landscape orientation.
+bool isTabletLandscape(BuildContext context) {
+  final s = MediaQuery.sizeOf(context);
+  return s.shortestSide >= 600 && s.width > s.height;
+}
+
 /// Maximale Breite für Text-/Button-Kolumnen auf dem iPad Hochformat.
 /// Auf dem iPhone bleibt `double.infinity` → bestehendes Layout unverändert.
 double maxContentWidth(BuildContext context) =>

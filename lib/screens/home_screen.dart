@@ -342,6 +342,24 @@ class _AlarmRingingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Phone-Querformat: eigene Zwei-Zonen-Komposition.
+    if (isPhoneLandscape(context)) {
+      return _PhoneLandscapeRingingLayout(
+        onStop: onStop,
+        onSnooze: onSnooze,
+        hour: hour,
+        minute: minute,
+      );
+    }
+    // iPad-Querformat: großzügige Smart-Display-Komposition.
+    if (isTabletLandscape(context)) {
+      return _TabletLandscapeRingingLayout(
+        onStop: onStop,
+        onSnooze: onSnooze,
+        hour: hour,
+        minute: minute,
+      );
+    }
     // iPad-Hochformat: eigene cinematische Komposition. iPhone-Pfad unverändert.
     if (isTabletPortrait(context)) {
       return _TabletPortraitRingingLayout(
@@ -709,6 +727,16 @@ class _ArmedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Phone-Querformat: eigene Sleep-Ambient-Komposition.
+    if (isPhoneLandscape(context)) {
+      return _PhoneLandscapeArmedLayout(
+        hour: hour,
+        minute: minute,
+        now: now,
+        fireAt: fireAt,
+        onStop: onStop,
+      );
+    }
     // iPad-Hochformat: eigene cinematische Komposition. iPhone-Pfad unverändert.
     if (isTabletPortrait(context)) {
       return _TabletPortraitArmedLayout(
@@ -1065,6 +1093,23 @@ class _HomeSetupView extends StatelessWidget {
         showStop: showStop,
       );
     }
+    // iPad-Querformat: cinematic Two-Zone Smart-Display.
+    if (isTabletLandscape(context)) {
+      return _TabletLandscapeSetupLayout(
+        hour: hour,
+        minute: minute,
+        now: now,
+        selectedMix: selectedMix,
+        onTimeChanged: onTimeChanged,
+        onToggleAmPm: onToggleAmPm,
+        onMixChanged: onMixChanged,
+        onArm: onArm,
+        onStop: onStop,
+        onPreview: onPreview,
+        isTesting: isTesting,
+        showStop: showStop,
+      );
+    }
     // iPad-Hochformat: eigenes Layout. iPhone-Pfad darunter bleibt unverändert.
     if (isTabletPortrait(context)) {
       return _TabletPortraitSetupLayout(
@@ -1202,19 +1247,37 @@ class _Header extends StatelessWidget {
 }
 
 class _TimeReadout extends StatelessWidget {
-  const _TimeReadout({required this.text});
+  const _TimeReadout({
+    required this.text,
+    this.fontSize = 22,
+    this.glow = false,
+  });
   final String text;
+
+  /// Optionale Größe (Default 22 = Phone-Hochformat).
+  final double fontSize;
+
+  /// Warmer Amber-Glow hinter dem Text (Default false = kein Glow).
+  final bool glow;
 
   @override
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
         color: _HomeSetupView._warmGold,
-        fontSize: 22,
+        fontSize: fontSize,
         fontWeight: FontWeight.w400,
         letterSpacing: 2.5,
         height: 1.0,
+        shadows: glow
+            ? [
+                Shadow(
+                  color: const Color(0xFFE8A65A).withAlpha(120),
+                  blurRadius: 18,
+                ),
+              ]
+            : null,
       ),
     );
   }
@@ -2193,6 +2256,12 @@ class _PhoneLandscapeSetupLayout extends StatelessWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
+                                _TimeReadout(
+                                  text: formatHour12(hour, minute),
+                                  fontSize: 26,
+                                  glow: true,
+                                ),
+                                const SizedBox(width: 10),
                                 _AmPmPill(
                                     label: hour < 12 ? l10n.am : l10n.pm,
                                     onTap: onToggleAmPm),
@@ -2237,6 +2306,667 @@ class _PhoneLandscapeSetupLayout extends StatelessWidget {
                         const SizedBox(height: 4),
                         const _BottomNavStrip(compact: true),
                       ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Phone-Querformat-Armed-Layout (Sleep Ambient Display) ──────────────────
+// Eigene Komposition für isPhoneLandscape. Wiederverwendet _ArmedHeader,
+// _CozyStopButton und _BottomNavStrip mit landscape-passenden Werten.
+// Keine funktionalen Änderungen.
+class _PhoneLandscapeArmedLayout extends StatelessWidget {
+  const _PhoneLandscapeArmedLayout({
+    required this.hour,
+    required this.minute,
+    required this.now,
+    required this.fireAt,
+    required this.onStop,
+  });
+
+  final int hour;
+  final int minute;
+  final DateTime now;
+  final DateTime? fireAt;
+  final VoidCallback onStop;
+
+  String get _alarmTimeText =>
+      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+
+  String get _nowTimeText =>
+      '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
+  String? _buildRemainingText(AppLocalizations l10n) {
+    final fire = fireAt;
+    if (fire == null) return null;
+    final diff = fire.difference(now);
+    if (diff.isNegative) return null;
+    final h = diff.inHours;
+    final m = diff.inMinutes.remainder(60);
+    final String duration;
+    if (h <= 0 && m <= 0) {
+      duration = l10n.wakesInSoon;
+    } else if (h <= 0) {
+      duration = '${m}m';
+    } else {
+      duration = '${h}h ${m}m';
+    }
+    return '${l10n.wakesInLabel} $duration';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // 1) Cinematic fullscreen Landscape-Background. Das Bild trägt die
+        // ganze Szene: Katze links, Sternenhimmel mit Mond rechts – exakt
+        // die Zwei-Zonen-Komposition, ohne harte Card-Grenze.
+        Positioned.fill(
+          child: Image.asset(
+            'assets/images/querformatarmedscreen.png',
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+          ),
+        ),
+        // 2) Sanfter Right-Wash: linke Hälfte transparent (Katze klar),
+        // rechte Hälfte dezent dunkler für die Lesbarkeit des Text-Blocks.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Colors.transparent,
+                    Colors.transparent,
+                    const Color(0xFF0E0B22).withAlpha(155),
+                  ],
+                  stops: const [0.0, 0.42, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ),
+        // 3) Dezenter Bottom-Wash für den flachen Bottom-Nav-Strip.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.transparent,
+                    const Color(0xFF0E0B22).withAlpha(110),
+                  ],
+                  stops: const [0.0, 0.65, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ),
+        // 4) Content – Row mit linker Cat-Zone (leer) und rechter UI-Zone.
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 22, 6),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      // LINKS: Cat-Zone bleibt frei → Katze aus dem Bild bleibt
+                      // ungestört sichtbar.
+                      const Spacer(flex: 5),
+                      // RECHTS: ruhiger UI-Block, vertikal zentriert.
+                      Expanded(
+                        flex: 5,
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 420),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                _ArmedHeader(
+                                  greeting: l10n.armedGreeting,
+                                  subtitle: l10n.armedSubtitle,
+                                  nowLabel: l10n.nowLabel,
+                                  nowTimeText: _nowTimeText,
+                                  alarmLabel: l10n.alarmAt,
+                                  alarmTimeText: _alarmTimeText,
+                                  remainingText: _buildRemainingText(l10n),
+                                  timeFontSize: 62,
+                                  textScale: 0.9,
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: 260,
+                                  child: _CozyStopButton(
+                                    label: l10n.stopButton,
+                                    onTap: onStop,
+                                    height: 46,
+                                    glowBlur: 22,
+                                    glowAlpha: 120,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const _BottomNavStrip(compact: true),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Phone-Querformat-Ringing-Layout (cinematic sunrise two-zone) ───────────
+// Eigene Komposition für isPhoneLandscape. Linke Bildhälfte zeigt die
+// erwachende Katze (aus dem Background), rechte Hälfte ist UI-Zone mit
+// Greeting + Time + Buttons. Keine funktionalen Änderungen.
+class _PhoneLandscapeRingingLayout extends StatelessWidget {
+  const _PhoneLandscapeRingingLayout({
+    required this.onStop,
+    required this.onSnooze,
+    required this.hour,
+    required this.minute,
+  });
+
+  final VoidCallback onStop;
+  final VoidCallback onSnooze;
+  final int hour;
+  final int minute;
+
+  String get _alarmTime =>
+      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // 1) Cinematic Landscape Wakeup-Background (wakeupquer.png).
+        // Katze + Pfote + Sonnenuntergang links, dunkler Bereich rechts.
+        Positioned.fill(
+          child: Image.asset(
+            'assets/images/wakeupquer.png',
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+          ),
+        ),
+        // 2) Right-Wash: linke Hälfte transparent (Katze klar), rechte
+        // Hälfte sanft dunkler für die Lesbarkeit des Text-Blocks.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Colors.transparent,
+                    Colors.transparent,
+                    const Color(0xFF1B1638).withAlpha(170),
+                  ],
+                  stops: const [0.0, 0.42, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ),
+        // 3) Dezenter Bottom-Wash für die Tagline / den Bottom-Bereich.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.transparent,
+                    const Color(0xFF1B1638).withAlpha(110),
+                  ],
+                  stops: const [0.0, 0.65, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ),
+        // 4) Content – Row mit linker Cat-Zone (frei) und rechter UI-Zone.
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 22, 8),
+            child: Row(
+              children: [
+                const Spacer(flex: 5),
+                Expanded(
+                  flex: 5,
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          _RingingHeader(
+                            greeting: l10n.goodMorning,
+                            subtitle: l10n.wokeYou,
+                            alarmTime: _alarmTime,
+                            timeToWake: l10n.timeToWake,
+                            timeFontSize: 78,
+                            textScale: 0.92,
+                          ),
+                          const SizedBox(height: 14),
+                          SizedBox(
+                            width: 280,
+                            child: _IAmAwakeButton(
+                              label: l10n.iAmAwake,
+                              onTap: onStop,
+                              height: 48,
+                              glowBlur: 24,
+                              glowAlpha: 140,
+                              iconSize: 20,
+                              labelFontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: 280,
+                            child: _SnoozeButton(
+                              label: l10n.snooze5,
+                              onTap: onSnooze,
+                              height: 42,
+                              iconSize: 16,
+                              labelFontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            '❤  ${l10n.morningTagline}',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white.withAlpha(170),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w400,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── iPad-Querformat-Ringing-Layout (Smart Display Two-Zone) ────────────────
+// Eigene großzügige Komposition für isTabletLandscape. Selbe Architektur wie
+// _PhoneLandscapeRingingLayout (Cat-Zone links, UI-Zone rechts), aber mit
+// iPad-Typografie/-Buttons + mehr negative space. Keine funktionalen
+// Änderungen.
+class _TabletLandscapeRingingLayout extends StatelessWidget {
+  const _TabletLandscapeRingingLayout({
+    required this.onStop,
+    required this.onSnooze,
+    required this.hour,
+    required this.minute,
+  });
+
+  final VoidCallback onStop;
+  final VoidCallback onSnooze;
+  final int hour;
+  final int minute;
+
+  String get _alarmTime =>
+      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // 1) Cinematic Landscape Wakeup-Background (wakeupquer.png).
+        // Katze + Pfote + Sonnenuntergang links, dunkler Bereich rechts –
+        // fullscreen, keine Card-Optik.
+        Positioned.fill(
+          child: Image.asset(
+            'assets/images/wakeupquer.png',
+            fit: BoxFit.cover,
+            alignment: const Alignment(-0.6, 0),
+          ),
+        ),
+        // 2) Right-Wash: weicher Übergang über fast die ganze rechte Hälfte.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Colors.transparent,
+                    const Color(0xFF1B1638).withAlpha(40),
+                    const Color(0xFF1B1638).withAlpha(185),
+                  ],
+                  stops: const [0.0, 0.32, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ),
+        // 3) Sehr dezenter Bottom-Wash für die Tagline-Zone unten.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.transparent,
+                    const Color(0xFF1B1638).withAlpha(110),
+                  ],
+                  stops: const [0.0, 0.72, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ),
+        // 4) Content – Row mit linker freier Cat-Zone (~55%) und rechter
+        // UI-Zone (~45%). Mehr breathing room als auf dem iPhone.
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(32, 24, 40, 20),
+            child: Row(
+              children: [
+                const Spacer(flex: 6),
+                Expanded(
+                  flex: 5,
+                  child: Align(
+                    alignment: const Alignment(0, -0.22),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 540),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          _RingingHeader(
+                            greeting: l10n.goodMorning,
+                            subtitle: l10n.wokeYou,
+                            alarmTime: _alarmTime,
+                            timeToWake: l10n.timeToWake,
+                            timeFontSize: 108,
+                            textScale: 1.35,
+                          ),
+                          const SizedBox(height: 28),
+                          SizedBox(
+                            width: 420,
+                            child: _IAmAwakeButton(
+                              label: l10n.iAmAwake,
+                              onTap: onStop,
+                              height: 68,
+                              glowBlur: 38,
+                              glowAlpha: 175,
+                              iconSize: 26,
+                              labelFontSize: 19,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          SizedBox(
+                            width: 380,
+                            child: Opacity(
+                              opacity: 0.78,
+                              child: _SnoozeButton(
+                                label: l10n.snooze5,
+                                onTap: onSnooze,
+                                height: 56,
+                                iconSize: 22,
+                                labelFontSize: 16,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          Text(
+                            '❤  ${l10n.morningTagline}',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white.withAlpha(170),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── iPad-Querformat-Setup-Layout (Smart Display Two-Zone) ──────────────────
+// Eigene cinematische Zwei-Zonen-Komposition für isTabletLandscape.
+// Links bleibt frei für die Katze im Background, rechts liegt die
+// kompakte UI-Zone. Wiederverwendet bestehende Sub-Widgets mit
+// landscape-passenden Parametern. Keine funktionalen Änderungen.
+class _TabletLandscapeSetupLayout extends StatelessWidget {
+  const _TabletLandscapeSetupLayout({
+    required this.hour,
+    required this.minute,
+    required this.now,
+    required this.selectedMix,
+    required this.onTimeChanged,
+    required this.onToggleAmPm,
+    required this.onMixChanged,
+    required this.onArm,
+    required this.onStop,
+    required this.onPreview,
+    required this.isTesting,
+    required this.showStop,
+  });
+
+  final int hour;
+  final int minute;
+  final DateTime now;
+  final AlarmMix selectedMix;
+  final void Function(int hour, int minute) onTimeChanged;
+  final VoidCallback onToggleAmPm;
+  final ValueChanged<AlarmMix> onMixChanged;
+  final VoidCallback onArm;
+  final VoidCallback onStop;
+  final VoidCallback onPreview;
+  final bool isTesting;
+  final bool showStop;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // 1) Cinematic Landscape Background.
+        Positioned.fill(
+          child: Image.asset(
+            'assets/images/querformatscreen.png',
+            fit: BoxFit.cover,
+            alignment: const Alignment(-0.4, 0),
+          ),
+        ),
+        // 2) Right-Wash: weicher Übergang in die UI-Zone rechts.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Colors.transparent,
+                    const Color(0xFF0E0B22).withAlpha(45),
+                    const Color(0xFF0E0B22).withAlpha(190),
+                  ],
+                  stops: const [0.0, 0.34, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ),
+        // 3) Dezenter Bottom-Wash für die Bottom-Nav-Zone.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.transparent,
+                    const Color(0xFF0E0B22).withAlpha(120),
+                  ],
+                  stops: const [0.0, 0.72, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ),
+        // 4) Content – Row mit Cat-Zone links und kompaktem UI-Block rechts.
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(28, 18, 36, 18),
+            child: Row(
+              children: [
+                const Spacer(flex: 6),
+                Expanded(
+                  flex: 5,
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 520),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Kompakter Titel
+                          Text(
+                            l10n.homeQuestion,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.2,
+                              height: 1.25,
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+                          // Elegante schwebende Uhr – nicht dominant
+                          SizedBox(
+                            height: 325,
+                            child: AspectRatio(
+                              aspectRatio: 1,
+                              child: ClockView(
+                                hour: hour,
+                                minute: minute,
+                                now: now,
+                                onTimeChanged: onTimeChanged,
+                                showCatImage: false,
+                                miniClockScale: 0.55,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          // Digital + AM/PM + Preview kompakt gruppiert
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _TimeReadout(
+                                text: formatHour12(hour, minute),
+                                fontSize: 28,
+                                glow: true,
+                              ),
+                              const SizedBox(width: 12),
+                              _AmPmPill(
+                                  label: hour < 12 ? l10n.am : l10n.pm,
+                                  onTap: onToggleAmPm),
+                              const SizedBox(width: 12),
+                              _IconChip(
+                                icon: isTesting
+                                    ? Icons.stop_rounded
+                                    : Icons.play_arrow_rounded,
+                                onTap: onPreview,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 18),
+                          Text(
+                            l10n.intensityTitle,
+                            style: TextStyle(
+                              color: Colors.white.withAlpha(195),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          MixSelector(
+                            selected: selectedMix,
+                            onChanged: onMixChanged,
+                            compact: true,
+                          ),
+                          const SizedBox(height: 18),
+                          // Premium CTA – schmaler als die volle Spalte
+                          SizedBox(
+                            width: 420,
+                            child: showStop
+                                ? _StopButton(onTap: onStop, height: 56)
+                                : _PrimaryCta(
+                                    label: l10n.setAlarmButton,
+                                    onTap: onArm,
+                                    height: 56,
+                                    glowBlur: 32,
+                                    glowAlpha: 160,
+                                  ),
+                          ),
+                          const SizedBox(height: 16),
+                          const _BottomNavStrip(compact: true),
+                        ],
+                      ),
                     ),
                   ),
                 ),
