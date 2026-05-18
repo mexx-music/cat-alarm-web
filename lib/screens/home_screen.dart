@@ -762,6 +762,17 @@ class _ArmedScreen extends StatelessWidget {
         onStop: onStop,
       );
     }
+    // iPad-Querformat: cinematic Two-Zone Smart-Display (Premium-Stil
+    // analog zum Wake-Screen). iPhone-Landscape-Pfad bleibt unverändert.
+    if (isTabletLandscape(context)) {
+      return _TabletLandscapeArmedLayout(
+        hour: hour,
+        minute: minute,
+        now: now,
+        fireAt: fireAt,
+        onStop: onStop,
+      );
+    }
     final l10n = AppLocalizations.of(context)!;
     return Stack(
       fit: StackFit.expand,
@@ -851,14 +862,10 @@ class _ArmedScreen extends StatelessWidget {
     if (diff.isNegative) return null;
     final h = diff.inHours;
     final m = diff.inMinutes.remainder(60);
-    final String duration;
     if (h <= 0 && m <= 0) {
-      duration = l10n.wakesInSoon;
-    } else if (h <= 0) {
-      duration = '${m}m';
-    } else {
-      duration = '${h}h ${m}m';
+      return l10n.wakesInSoonFull;
     }
+    final duration = h <= 0 ? '${m}m' : '${h}h ${m}m';
     return '${l10n.wakesInLabel} $duration';
   }
 }
@@ -1954,14 +1961,10 @@ class _TabletPortraitArmedLayout extends StatelessWidget {
     if (diff.isNegative) return null;
     final h = diff.inHours;
     final m = diff.inMinutes.remainder(60);
-    final String duration;
     if (h <= 0 && m <= 0) {
-      duration = l10n.wakesInSoon;
-    } else if (h <= 0) {
-      duration = '${m}m';
-    } else {
-      duration = '${h}h ${m}m';
+      return l10n.wakesInSoonFull;
     }
+    final duration = h <= 0 ? '${m}m' : '${h}h ${m}m';
     return '${l10n.wakesInLabel} $duration';
   }
 
@@ -2425,14 +2428,10 @@ class _PhoneLandscapeArmedLayout extends StatelessWidget {
     if (diff.isNegative) return null;
     final h = diff.inHours;
     final m = diff.inMinutes.remainder(60);
-    final String duration;
     if (h <= 0 && m <= 0) {
-      duration = l10n.wakesInSoon;
-    } else if (h <= 0) {
-      duration = '${m}m';
-    } else {
-      duration = '${h}h ${m}m';
+      return l10n.wakesInSoonFull;
     }
+    final duration = h <= 0 ? '${m}m' : '${h}h ${m}m';
     return '${l10n.wakesInLabel} $duration';
   }
 
@@ -2533,6 +2532,162 @@ class _PhoneLandscapeArmedLayout extends StatelessWidget {
                                     height: 46,
                                     glowBlur: 22,
                                     glowAlpha: 120,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const _BottomNavStrip(compact: true),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── iPad-Querformat-Armed-Layout (cinematic two-zone smart display) ───────
+// Eigene Premium-Komposition NUR für isTabletLandscape. Wiederverwendet
+// _ArmedHeader, _CozyStopButton und _BottomNavStrip mit landscape-passenden
+// Parametern; keine Alarm-/Timer-/Audio-/Notification-Logik geändert.
+class _TabletLandscapeArmedLayout extends StatelessWidget {
+  const _TabletLandscapeArmedLayout({
+    required this.hour,
+    required this.minute,
+    required this.now,
+    required this.fireAt,
+    required this.onStop,
+  });
+
+  final int hour;
+  final int minute;
+  final DateTime now;
+  final DateTime? fireAt;
+  final VoidCallback onStop;
+
+  String get _alarmTimeText =>
+      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+
+  String get _nowTimeText =>
+      '${now.hour.toString().padLeft(2, '0')}:'
+      '${now.minute.toString().padLeft(2, '0')}:'
+      '${now.second.toString().padLeft(2, '0')}';
+
+  String? _buildRemainingText(AppLocalizations l10n) {
+    final fire = fireAt;
+    if (fire == null) return null;
+    final diff = fire.difference(now);
+    if (diff.isNegative) return null;
+    final h = diff.inHours;
+    final m = diff.inMinutes.remainder(60);
+    if (h <= 0 && m <= 0) {
+      return l10n.wakesInSoonFull;
+    }
+    final duration = h <= 0 ? '${m}m' : '${h}h ${m}m';
+    return '${l10n.wakesInLabel} $duration';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // 1) Cinematic fullscreen Landscape-Background. Das Bild trägt die
+        // ganze Szene: Katze links, Mond/Sternenhimmel rechts.
+        Positioned.fill(
+          child: Image.asset(
+            'assets/images/querformatarmedscreen.png',
+            fit: BoxFit.cover,
+            alignment: const Alignment(-0.4, 0),
+          ),
+        ),
+        // 2) Sanfter Right-Wash: linke Hälfte frei für die Katze,
+        // rechte Hälfte dezent dunkler für die Lesbarkeit.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Colors.transparent,
+                    const Color(0xFF0E0B22).withAlpha(40),
+                    const Color(0xFF0E0B22).withAlpha(185),
+                  ],
+                  stops: const [0.0, 0.34, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ),
+        // 3) Dezenter Bottom-Wash für den flachen Bottom-Nav-Strip.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.transparent,
+                    const Color(0xFF0E0B22).withAlpha(120),
+                  ],
+                  stops: const [0.0, 0.72, 1.0],
+                ),
+              ),
+            ),
+          ),
+        ),
+        // 4) Content – Row mit freier Cat-Zone links (~55%) und kompaktem
+        // UI-Block rechts (~45%). Premium-Skalierung analog Wake-Screen.
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(32, 24, 40, 20),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Spacer(flex: 6),
+                      Expanded(
+                        flex: 5,
+                        child: Align(
+                          alignment: const Alignment(0, -0.05),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 540),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                _ArmedHeader(
+                                  greeting: l10n.armedGreeting,
+                                  subtitle: l10n.armedSubtitle,
+                                  nowLabel: l10n.nowLabel,
+                                  nowTimeText: _nowTimeText,
+                                  alarmLabel: l10n.alarmAt,
+                                  alarmTimeText: _alarmTimeText,
+                                  remainingText: _buildRemainingText(l10n),
+                                  timeFontSize: 96,
+                                  textScale: 1.25,
+                                ),
+                                const SizedBox(height: 24),
+                                SizedBox(
+                                  width: 360,
+                                  child: _CozyStopButton(
+                                    label: l10n.stopButton,
+                                    onTap: onStop,
+                                    height: 60,
+                                    glowBlur: 32,
+                                    glowAlpha: 150,
                                   ),
                                 ),
                               ],

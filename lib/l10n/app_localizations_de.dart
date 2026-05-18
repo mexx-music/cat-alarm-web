@@ -126,6 +126,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get wakesInSoon => 'gleich';
 
   @override
+  String get wakesInSoonFull => 'Deine Katze weckt dich gleich';
+
+  @override
   String get nightTapToWake => 'Tippen zum Aufwecken';
 
   @override

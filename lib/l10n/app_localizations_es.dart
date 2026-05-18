@@ -126,6 +126,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get wakesInSoon => 'pronto';
 
   @override
+  String get wakesInSoonFull => 'Tu gato te despertará pronto';
+
+  @override
   String get nightTapToWake => 'Tocar para activar';
 
   @override
