@@ -80,13 +80,12 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
       if (!mounted) t.cancel();
       final now = DateTime.now();
 
-      // Wenn Nutzer gestoppt hat, nie wieder automatisch starten
-      if (_userStopped) {
-        return;
-      }
+      // Hinweis: kein Early-Return auf _userStopped — sonst friert die
+      // Setup-Uhrzeit nach Stop ein. Auto-Trigger und Night-Mode sind
+      // bereits durch _armed=false (in _handleStop) blockiert.
 
       // Automatischer Alarm-Check
-      if (_armed && _fireAt != null && now.compareTo(_fireAt!) >= 0) {
+      if (_armed && _fireAt != null && !_userStopped && now.compareTo(_fireAt!) >= 0) {
         final fireAt = _fireAt;
         setState(() {
           _armed = false;
