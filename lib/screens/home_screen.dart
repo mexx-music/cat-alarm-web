@@ -255,9 +255,40 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          WakelockManager(
-            active: _armed || _isTesting,
-            dimLevel: _nightMode ? 0.02 : 0.06,
+          // Wakelock muss auch während des Klingelns aktiv bleiben,
+          // sonst schläft das Display und Android suspendiert das Audio.
+          ValueListenableBuilder<bool>(
+            valueListenable: CatAlarmPlayer.I.isActive,
+            builder: (context, ringing, _) {
+              final tablet = isTablet(context);
+
+              // iPhone-Pfad bleibt unverändert: sofort auf Nacht-Helligkeit.
+              // iPad-Pfad: erst nach einigen Minuten dimmen und insgesamt
+              // weniger stark abdunkeln, damit der Armed-Screen tagsüber
+              // gut lesbar bleibt. Während des Klingelns wird der Screen
+              // bewusst hell gehalten.
+              double dim;
+              Duration? autoDimAfter;
+              if (ringing) {
+                dim = tablet ? 0.85 : 0.06;
+                autoDimAfter = null;
+              } else if (_nightMode) {
+                dim = tablet ? 0.04 : 0.02;
+                autoDimAfter = null;
+              } else if (tablet) {
+                dim = 0.35;
+                autoDimAfter = const Duration(minutes: 4);
+              } else {
+                dim = 0.06;
+                autoDimAfter = null;
+              }
+
+              return WakelockManager(
+                active: _armed || _isTesting || ringing,
+                dimLevel: dim,
+                autoDimAfter: autoDimAfter,
+              );
+            },
           ),
           // Starfield (Animation) im Night-Mode deaktivieren → Battery-Saver
           if (!_nightMode) const Positioned.fill(child: Starfield()),
