@@ -148,6 +148,87 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get morningTagline => '有猫咪陪伴，每个早晨都更美好。';
+
+  @override
+  String get sleepModeTitle => '助眠模式';
+
+  @override
+  String get sleepModeSubtitle => '混合声音并设置计时器';
+
+  @override
+  String get sleepSoundPurr => '呼噜声';
+
+  @override
+  String get sleepSoundRain => '雨声';
+
+  @override
+  String get sleepSoundOcean => '海浪';
+
+  @override
+  String get sleepSoundMusic => '音乐';
+
+  @override
+  String get sleepMusicTitle => '选择音乐';
+
+  @override
+  String get sleepMusicSoftAcoustic => 'Soft Acoustic Guitar';
+
+  @override
+  String get sleepMusicVerySlow => 'Very Slow Acoustic';
+
+  @override
+  String get sleepMusicRelaxing => 'Relaxing Acoustic';
+
+  @override
+  String get sleepMusicWarmSauna => 'Warm Sauna Ambience';
+
+  @override
+  String get sleepTimerTitle => '选择计时器';
+
+  @override
+  String get sleepTimer15 => '15 分钟';
+
+  @override
+  String get sleepTimer30 => '30 分钟';
+
+  @override
+  String get sleepTimer60 => '60 分钟';
+
+  @override
+  String get sleepTimerUntilStop => '直到我停止';
+
+  @override
+  String get sleepStartTitle => '启动助眠模式';
+
+  @override
+  String get sleepWithAlarm => '带闹钟';
+
+  @override
+  String get sleepWithAlarmHint => '闹钟仍然有效';
+
+  @override
+  String get sleepWithoutAlarm => '无闹钟';
+
+  @override
+  String get sleepWithoutAlarmHint => '声音随计时器停止';
+
+  @override
+  String get sleepStartButton => '启动助眠模式';
+
+  @override
+  String get sleepStopButton => '停止助眠模式';
+
+  @override
+  String get sleepRemainingPrefix => '剩余 ';
+
+  @override
+  String get sleepUnlimited => '持续到停止';
+
+  @override
+  String get sleepActive => '● 助眠运行中';
+
+  @override
+  String get sleepNoChannelHint => '请至少启用一种声音';
 }
 
 /// The translations for Chinese, as used in China (`zh_CN`).
@@ -294,4 +375,85 @@ class AppLocalizationsZhCn extends AppLocalizationsZh {
 
   @override
   String get morningTagline => '有猫咪陪伴，每个早晨都更美好。';
+
+  @override
+  String get sleepModeTitle => '助眠模式';
+
+  @override
+  String get sleepModeSubtitle => '混合声音并设置计时器';
+
+  @override
+  String get sleepSoundPurr => '呼噜声';
+
+  @override
+  String get sleepSoundRain => '雨声';
+
+  @override
+  String get sleepSoundOcean => '海浪';
+
+  @override
+  String get sleepSoundMusic => '音乐';
+
+  @override
+  String get sleepMusicTitle => '选择音乐';
+
+  @override
+  String get sleepMusicSoftAcoustic => 'Soft Acoustic Guitar';
+
+  @override
+  String get sleepMusicVerySlow => 'Very Slow Acoustic';
+
+  @override
+  String get sleepMusicRelaxing => 'Relaxing Acoustic';
+
+  @override
+  String get sleepMusicWarmSauna => 'Warm Sauna Ambience';
+
+  @override
+  String get sleepTimerTitle => '选择计时器';
+
+  @override
+  String get sleepTimer15 => '15 分钟';
+
+  @override
+  String get sleepTimer30 => '30 分钟';
+
+  @override
+  String get sleepTimer60 => '60 分钟';
+
+  @override
+  String get sleepTimerUntilStop => '直到我停止';
+
+  @override
+  String get sleepStartTitle => '启动助眠模式';
+
+  @override
+  String get sleepWithAlarm => '带闹钟';
+
+  @override
+  String get sleepWithAlarmHint => '闹钟仍然有效';
+
+  @override
+  String get sleepWithoutAlarm => '无闹钟';
+
+  @override
+  String get sleepWithoutAlarmHint => '声音随计时器停止';
+
+  @override
+  String get sleepStartButton => '启动助眠模式';
+
+  @override
+  String get sleepStopButton => '停止助眠模式';
+
+  @override
+  String get sleepRemainingPrefix => '剩余 ';
+
+  @override
+  String get sleepUnlimited => '持续到停止';
+
+  @override
+  String get sleepActive => '● 助眠运行中';
+
+  @override
+  String get sleepNoChannelHint => '请至少启用一种声音';
 }

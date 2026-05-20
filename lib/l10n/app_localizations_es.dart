@@ -148,4 +148,85 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get morningTagline => 'Cada mañana es mejor con tu gato.';
+
+  @override
+  String get sleepModeTitle => 'Modo dormir';
+
+  @override
+  String get sleepModeSubtitle => 'Combina sonidos y elige un temporizador';
+
+  @override
+  String get sleepSoundPurr => 'Ronroneo';
+
+  @override
+  String get sleepSoundRain => 'Lluvia';
+
+  @override
+  String get sleepSoundOcean => 'Mar';
+
+  @override
+  String get sleepSoundMusic => 'Música';
+
+  @override
+  String get sleepMusicTitle => 'Elegir música';
+
+  @override
+  String get sleepMusicSoftAcoustic => 'Soft Acoustic Guitar';
+
+  @override
+  String get sleepMusicVerySlow => 'Very Slow Acoustic';
+
+  @override
+  String get sleepMusicRelaxing => 'Relaxing Acoustic';
+
+  @override
+  String get sleepMusicWarmSauna => 'Warm Sauna Ambience';
+
+  @override
+  String get sleepTimerTitle => 'Elegir temporizador';
+
+  @override
+  String get sleepTimer15 => '15 min';
+
+  @override
+  String get sleepTimer30 => '30 min';
+
+  @override
+  String get sleepTimer60 => '60 min';
+
+  @override
+  String get sleepTimerUntilStop => 'Hasta que pare';
+
+  @override
+  String get sleepStartTitle => 'Iniciar modo dormir';
+
+  @override
+  String get sleepWithAlarm => 'Con alarma';
+
+  @override
+  String get sleepWithAlarmHint => 'La alarma sigue activa';
+
+  @override
+  String get sleepWithoutAlarm => 'Sin alarma';
+
+  @override
+  String get sleepWithoutAlarmHint => 'Sonidos paran con el timer';
+
+  @override
+  String get sleepStartButton => 'Iniciar modo dormir';
+
+  @override
+  String get sleepStopButton => 'Detener modo dormir';
+
+  @override
+  String get sleepRemainingPrefix => 'queda ';
+
+  @override
+  String get sleepUnlimited => 'hasta detener';
+
+  @override
+  String get sleepActive => '● Sleep activo';
+
+  @override
+  String get sleepNoChannelHint => 'Activa al menos un sonido';
 }

@@ -148,4 +148,85 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get morningTagline => 'Every morning is brighter with your cat.';
+
+  @override
+  String get sleepModeTitle => 'Sleep mode';
+
+  @override
+  String get sleepModeSubtitle => 'Mix sounds and set a timer';
+
+  @override
+  String get sleepSoundPurr => 'Purring';
+
+  @override
+  String get sleepSoundRain => 'Rain';
+
+  @override
+  String get sleepSoundOcean => 'Ocean';
+
+  @override
+  String get sleepSoundMusic => 'Music';
+
+  @override
+  String get sleepMusicTitle => 'Choose music';
+
+  @override
+  String get sleepMusicSoftAcoustic => 'Soft Acoustic Guitar';
+
+  @override
+  String get sleepMusicVerySlow => 'Very Slow Acoustic';
+
+  @override
+  String get sleepMusicRelaxing => 'Relaxing Acoustic';
+
+  @override
+  String get sleepMusicWarmSauna => 'Warm Sauna Ambience';
+
+  @override
+  String get sleepTimerTitle => 'Select timer';
+
+  @override
+  String get sleepTimer15 => '15 min';
+
+  @override
+  String get sleepTimer30 => '30 min';
+
+  @override
+  String get sleepTimer60 => '60 min';
+
+  @override
+  String get sleepTimerUntilStop => 'Until I stop';
+
+  @override
+  String get sleepStartTitle => 'Start sleep mode';
+
+  @override
+  String get sleepWithAlarm => 'With alarm';
+
+  @override
+  String get sleepWithAlarmHint => 'Alarm stays active';
+
+  @override
+  String get sleepWithoutAlarm => 'No alarm';
+
+  @override
+  String get sleepWithoutAlarmHint => 'Sounds stop with timer';
+
+  @override
+  String get sleepStartButton => 'Start sleep mode';
+
+  @override
+  String get sleepStopButton => 'Stop sleep mode';
+
+  @override
+  String get sleepRemainingPrefix => 'remaining ';
+
+  @override
+  String get sleepUnlimited => 'runs until stop';
+
+  @override
+  String get sleepActive => '● Sleep running';
+
+  @override
+  String get sleepNoChannelHint => 'Please enable at least one sound';
 }

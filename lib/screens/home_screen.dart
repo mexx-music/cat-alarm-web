@@ -11,9 +11,11 @@ import '../widgets/mix_selector.dart';
 import '../widgets/wakelock_manager.dart';
 import '../starfield.dart';
 import '../audio/cat_alarm_player.dart';
+import '../audio/sleep_mixer.dart';
 import '../core/alarm_core.dart';
 import '../services/alarm_notifications.dart';
 import '../l10n/app_localizations.dart';
+import 'sleep_screen.dart';
 
 class CatAlarmScreen extends StatefulWidget {
   const CatAlarmScreen({super.key});
@@ -63,6 +65,8 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
     super.initState();
     // CatAlarmPlayer Aktivitäts-Tracking initialisieren
     CatAlarmPlayer.I.init();
+    // Sleep-Mixer-Player einmal vorbereiten (LoopMode etc.). Idempotent.
+    SleepMixer.I.init();
     // iOS-only: prepare local-notification scheduler so the alarm can fire
     // while the screen is locked or the app is in the background.
     AlarmNotifications.I.init();
@@ -178,6 +182,9 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
     final latch = CatAlarmPlayer.I.stopLatch;
     final asset = assetForAlarmMix(_selectedMix); // soft/standard/power Pfad
     if (CatAlarmPlayer.I.isObsolete(latch)) return;
+    // Falls der Einschlafmodus läuft, sanft ausblenden, damit der Wecker
+    // klar hörbar ist. Bestehender Alarm-Pfad bleibt unverändert.
+    SleepMixer.I.stopForAlarm();
     await CatAlarmPlayer.I.playAlarmAsset(asset, loop: true);
   }
 
@@ -192,6 +199,11 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
     } catch (e) {
       debugPrint('Fehler beim Stoppen: $e');
     }
+    // Sleep-Mixer ebenfalls beenden — verhindert, dass Klänge nach dem
+    // bewussten Stop weiterspielen. Manueller Stop = sofort, kein Fade.
+    try {
+      await SleepMixer.I.stopNow();
+    } catch (_) {}
 
     try {
       AlarmCore.I.onUserStop(); // entwaffnet den Scheduler
@@ -1545,11 +1557,14 @@ class _StopButton extends StatelessWidget {
 }
 
 class _BottomNavStrip extends StatelessWidget {
-  const _BottomNavStrip({this.compact = false});
+  const _BottomNavStrip({this.compact = false, this.activeIndex = 0});
 
   /// Flacher Modus für sehr enge Layouts (Phone-Landscape). Default false →
   /// Phone-Hochformat / iPad-Hochformat sind pixel-identisch zu vorher.
   final bool compact;
+
+  /// 0 = Wecker, 1 = Klänge.
+  final int activeIndex;
 
   @override
   Widget build(BuildContext context) {
@@ -1566,15 +1581,31 @@ class _BottomNavStrip extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _NavItem(
-              icon: Icons.alarm_rounded,
-              label: l10n.navAlarm,
-              active: true,
-              compact: compact),
+            icon: Icons.alarm_rounded,
+            label: l10n.navAlarm,
+            active: activeIndex == 0,
+            compact: compact,
+            onTap: () {
+              if (activeIndex != 0) Navigator.of(context).maybePop();
+            },
+          ),
           _NavItem(
-              icon: Icons.music_note_rounded,
-              label: l10n.navSounds,
-              active: false,
-              compact: compact),
+            icon: Icons.music_note_rounded,
+            label: l10n.navSounds,
+            active: activeIndex == 1,
+            compact: compact,
+            onTap: () {
+              if (activeIndex == 1) return;
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => SleepScreen(
+                    bottomNavBuilder: (ctx) =>
+                        const _BottomNavStrip(activeIndex: 1),
+                  ),
+                ),
+              );
+            },
+          ),
         ],
       ),
     );
@@ -1587,41 +1618,53 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.active,
     this.compact = false,
+    this.onTap,
   });
   final IconData icon;
   final String label;
   final bool active;
   final bool compact;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final color = active
         ? _HomeSetupView._warmAmber
         : Colors.white.withAlpha(110);
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon,
-            color: color,
-            size: compact ? 16 : 22,
-            shadows: active
-                ? [
-                    Shadow(
-                      color: _HomeSetupView._warmAmber.withAlpha(140),
-                      blurRadius: compact ? 6 : 10,
-                    ),
-                  ]
-                : null),
-        SizedBox(height: compact ? 1 : 2),
-        Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontSize: compact ? 9 : 11,
-            fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-          ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? 10 : 16,
+          vertical: compact ? 4 : 6,
         ),
-      ],
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon,
+                color: color,
+                size: compact ? 16 : 22,
+                shadows: active
+                    ? [
+                        Shadow(
+                          color: _HomeSetupView._warmAmber.withAlpha(140),
+                          blurRadius: compact ? 6 : 10,
+                        ),
+                      ]
+                    : null),
+            SizedBox(height: compact ? 1 : 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: compact ? 9 : 11,
+                fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

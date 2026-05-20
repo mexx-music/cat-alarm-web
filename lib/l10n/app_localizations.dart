@@ -384,6 +384,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Every morning is brighter with your cat.'**
   String get morningTagline;
+
+  /// No description provided for @sleepModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep mode'**
+  String get sleepModeTitle;
+
+  /// No description provided for @sleepModeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Mix sounds and set a timer'**
+  String get sleepModeSubtitle;
+
+  /// No description provided for @sleepSoundPurr.
+  ///
+  /// In en, this message translates to:
+  /// **'Purring'**
+  String get sleepSoundPurr;
+
+  /// No description provided for @sleepSoundRain.
+  ///
+  /// In en, this message translates to:
+  /// **'Rain'**
+  String get sleepSoundRain;
+
+  /// No description provided for @sleepSoundOcean.
+  ///
+  /// In en, this message translates to:
+  /// **'Ocean'**
+  String get sleepSoundOcean;
+
+  /// No description provided for @sleepSoundMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'Music'**
+  String get sleepSoundMusic;
+
+  /// No description provided for @sleepMusicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose music'**
+  String get sleepMusicTitle;
+
+  /// No description provided for @sleepMusicSoftAcoustic.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft Acoustic Guitar'**
+  String get sleepMusicSoftAcoustic;
+
+  /// No description provided for @sleepMusicVerySlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Very Slow Acoustic'**
+  String get sleepMusicVerySlow;
+
+  /// No description provided for @sleepMusicRelaxing.
+  ///
+  /// In en, this message translates to:
+  /// **'Relaxing Acoustic'**
+  String get sleepMusicRelaxing;
+
+  /// No description provided for @sleepMusicWarmSauna.
+  ///
+  /// In en, this message translates to:
+  /// **'Warm Sauna Ambience'**
+  String get sleepMusicWarmSauna;
+
+  /// No description provided for @sleepTimerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select timer'**
+  String get sleepTimerTitle;
+
+  /// No description provided for @sleepTimer15.
+  ///
+  /// In en, this message translates to:
+  /// **'15 min'**
+  String get sleepTimer15;
+
+  /// No description provided for @sleepTimer30.
+  ///
+  /// In en, this message translates to:
+  /// **'30 min'**
+  String get sleepTimer30;
+
+  /// No description provided for @sleepTimer60.
+  ///
+  /// In en, this message translates to:
+  /// **'60 min'**
+  String get sleepTimer60;
+
+  /// No description provided for @sleepTimerUntilStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Until I stop'**
+  String get sleepTimerUntilStop;
+
+  /// No description provided for @sleepStartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start sleep mode'**
+  String get sleepStartTitle;
+
+  /// No description provided for @sleepWithAlarm.
+  ///
+  /// In en, this message translates to:
+  /// **'With alarm'**
+  String get sleepWithAlarm;
+
+  /// No description provided for @sleepWithAlarmHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm stays active'**
+  String get sleepWithAlarmHint;
+
+  /// No description provided for @sleepWithoutAlarm.
+  ///
+  /// In en, this message translates to:
+  /// **'No alarm'**
+  String get sleepWithoutAlarm;
+
+  /// No description provided for @sleepWithoutAlarmHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sounds stop with timer'**
+  String get sleepWithoutAlarmHint;
+
+  /// No description provided for @sleepStartButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Start sleep mode'**
+  String get sleepStartButton;
+
+  /// No description provided for @sleepStopButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop sleep mode'**
+  String get sleepStopButton;
+
+  /// No description provided for @sleepRemainingPrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'remaining '**
+  String get sleepRemainingPrefix;
+
+  /// No description provided for @sleepUnlimited.
+  ///
+  /// In en, this message translates to:
+  /// **'runs until stop'**
+  String get sleepUnlimited;
+
+  /// No description provided for @sleepActive.
+  ///
+  /// In en, this message translates to:
+  /// **'● Sleep running'**
+  String get sleepActive;
+
+  /// No description provided for @sleepNoChannelHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enable at least one sound'**
+  String get sleepNoChannelHint;
 }
 
 class _AppLocalizationsDelegate
