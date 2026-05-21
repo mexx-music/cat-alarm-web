@@ -229,6 +229,37 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get sleepNoChannelHint => '请至少启用一种声音';
+
+  @override
+  String get sleepPresetsTitle => '预设';
+
+  @override
+  String get sleepPresetSave => '保存当前组合';
+
+  @override
+  String get sleepPresetSaved => '已保存';
+
+  @override
+  String get sleepPresetAdd => '添加组合';
+
+  @override
+  String get sleepPresetSaveTitle => '保存组合？';
+
+  @override
+  String sleepPresetSaveBody(String name) {
+    return '用当前的混合覆盖 “$name”？';
+  }
+
+  @override
+  String get sleepPresetSaveConfirm => '保存';
+
+  @override
+  String get sleepPresetSaveCancel => '取消';
+
+  @override
+  String sleepPresetDefault(int n) {
+    return '组合 $n';
+  }
 }
 
 /// The translations for Chinese, as used in China (`zh_CN`).
@@ -456,4 +487,35 @@ class AppLocalizationsZhCn extends AppLocalizationsZh {
 
   @override
   String get sleepNoChannelHint => '请至少启用一种声音';
+
+  @override
+  String get sleepPresetsTitle => '预设';
+
+  @override
+  String get sleepPresetSave => '保存当前组合';
+
+  @override
+  String get sleepPresetSaved => '已保存';
+
+  @override
+  String get sleepPresetAdd => '添加组合';
+
+  @override
+  String get sleepPresetSaveTitle => '保存组合？';
+
+  @override
+  String sleepPresetSaveBody(String name) {
+    return '用当前的混合覆盖 “$name”？';
+  }
+
+  @override
+  String get sleepPresetSaveConfirm => '保存';
+
+  @override
+  String get sleepPresetSaveCancel => '取消';
+
+  @override
+  String sleepPresetDefault(int n) {
+    return '组合 $n';
+  }
 }

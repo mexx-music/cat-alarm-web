@@ -74,6 +74,25 @@
   "sleepUnlimited": "runs until stop",
   "sleepActive": "● Sleep running",
   "sleepNoChannelHint": "Please enable at least one sound",
+  "sleepPresetsTitle": "Presets",
+  "sleepPresetSave": "Save current set",
+  "sleepPresetSaved": "Set saved",
+  "sleepPresetAdd": "Add set",
+  "sleepPresetSaveTitle": "Save set?",
+  "sleepPresetSaveBody": "Overwrite \"{name}\" with the current mix?",
+  "@sleepPresetSaveBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "sleepPresetSaveConfirm": "Save",
+  "sleepPresetSaveCancel": "Cancel",
+  "sleepPresetDefault": "Set {n}",
+  "@sleepPresetDefault": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
   "@appTitle": {
     "description": "App title shown in the app bar"
   },

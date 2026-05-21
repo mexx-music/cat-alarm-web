@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../audio/sleep_mixer.dart';
+import '../audio/sleep_preset_store.dart';
 import '../l10n/app_localizations.dart';
 
 /// Premium-Sleep-Screen mit Glass-Cards, warmem Amber-Akzent und sanften
@@ -24,9 +25,52 @@ class _SleepScreenState extends State<SleepScreen> {
   static const Color _glass = Color(0xFF1F1B36);
   static const Color _amber = Color(0xFFE8A65A);
 
+  // Notifiers we listen to so that any user-driven mix change clears the
+  // currently active preset marker. Kept as a list so we can subscribe and
+  // unsubscribe uniformly.
+  late final List<Listenable> _mixListenables = [
+    SleepMixer.I.purrEnabled,
+    SleepMixer.I.rainEnabled,
+    SleepMixer.I.oceanEnabled,
+    SleepMixer.I.musicEnabled,
+    SleepMixer.I.purrVolume,
+    SleepMixer.I.rainVolume,
+    SleepMixer.I.oceanVolume,
+    SleepMixer.I.musicVolume,
+    SleepMixer.I.selectedMusic,
+    SleepMixer.I.selectedTimer,
+    SleepMixer.I.selectedMode,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    for (final l in _mixListenables) {
+      l.addListener(_onMixChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final l in _mixListenables) {
+      l.removeListener(_onMixChanged);
+    }
+    super.dispose();
+  }
+
+  void _onMixChanged() {
+    // Ignore changes that come from loading a preset — those should leave the
+    // active marker intact.
+    if (SleepPresetStore.I.applying) return;
+    SleepPresetStore.I.clearActive();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    // iPhone-Landscape: kurze Höhe + Breite > Höhe. iPad bleibt mit
+    // height >= 500 (auch in Landscape) unverändert.
+    final mq = MediaQuery.of(context);
+    final isPhoneLandscape = mq.size.height < 500 && mq.size.width > mq.size.height;
     return Scaffold(
       backgroundColor: _bg,
       body: Stack(
@@ -49,45 +93,120 @@ class _SleepScreenState extends State<SleepScreen> {
                 _Header(onBack: () => Navigator.of(context).maybePop()),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(18, 4, 18, 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _IntroCard(
-                          title: l10n.sleepModeTitle,
-                          subtitle: l10n.sleepModeSubtitle,
-                          amber: _amber,
-                          glass: _glass,
-                        ),
-                        const SizedBox(height: 16),
-                        const _SoundsGrid(),
-                        const SizedBox(height: 18),
-                        _SectionTitle(l10n.sleepTimerTitle),
-                        const SizedBox(height: 10),
-                        const _TimerChips(),
-                        const SizedBox(height: 18),
-                        _SectionTitle(l10n.sleepStartTitle),
-                        const SizedBox(height: 10),
-                        const _ModePicker(),
-                        const SizedBox(height: 22),
-                        const _StartButton(),
-                        const SizedBox(height: 10),
-                        const _RemainingLine(),
-                      ],
-                    ),
+                    padding: EdgeInsets.fromLTRB(
+                        18, 4, 18, isPhoneLandscape ? 12 : 24),
+                    child: isPhoneLandscape
+                        ? const _CompactLandscapeBody(
+                            amber: _amber, glass: _glass)
+                        : const _PortraitBody(
+                            amber: _amber, glass: _glass),
                   ),
                 ),
                 if (widget.bottomNavBuilder != null) ...[
-                  const SizedBox(height: 8),
+                  SizedBox(height: isPhoneLandscape ? 2 : 8),
                   widget.bottomNavBuilder!(context),
-                  const SizedBox(height: 10),
+                  SizedBox(height: isPhoneLandscape ? 4 : 10),
                 ] else
-                  const SizedBox(height: 10),
+                  SizedBox(height: isPhoneLandscape ? 4 : 10),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PortraitBody extends StatelessWidget {
+  const _PortraitBody({required this.amber, required this.glass});
+  final Color amber;
+  final Color glass;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _IntroCard(
+          title: l10n.sleepModeTitle,
+          subtitle: l10n.sleepModeSubtitle,
+          amber: amber,
+          glass: glass,
+        ),
+        const SizedBox(height: 14),
+        const _PresetBar(),
+        const SizedBox(height: 16),
+        const _SoundsGrid(),
+        const SizedBox(height: 18),
+        _SectionTitle(l10n.sleepTimerTitle),
+        const SizedBox(height: 10),
+        const _TimerChips(),
+        const SizedBox(height: 18),
+        _SectionTitle(l10n.sleepStartTitle),
+        const SizedBox(height: 10),
+        const _ModePicker(),
+        const SizedBox(height: 22),
+        const _StartButton(),
+        const SizedBox(height: 10),
+        const _RemainingLine(),
+      ],
+    );
+  }
+}
+
+/// iPhone-Landscape: zwei Spalten nebeneinander.
+/// Links: Intro (kompakt), Preset-Bar, Sounds-Grid.
+/// Rechts: Timer, Modus, Start-Button.
+class _CompactLandscapeBody extends StatelessWidget {
+  const _CompactLandscapeBody({required this.amber, required this.glass});
+  final Color amber;
+  final Color glass;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _IntroCard(
+                title: l10n.sleepModeTitle,
+                subtitle: l10n.sleepModeSubtitle,
+                amber: amber,
+                glass: glass,
+                compact: true,
+              ),
+              const SizedBox(height: 8),
+              const _PresetBar(),
+              const SizedBox(height: 10),
+              const _SoundsGrid(),
+            ],
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _SectionTitle(l10n.sleepTimerTitle),
+              const SizedBox(height: 8),
+              const _TimerChips(),
+              const SizedBox(height: 12),
+              _SectionTitle(l10n.sleepStartTitle),
+              const SizedBox(height: 8),
+              const _ModePicker(),
+              const SizedBox(height: 12),
+              const _StartButton(),
+              const SizedBox(height: 4),
+              const _RemainingLine(),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -176,19 +295,27 @@ class _IntroCard extends StatelessWidget {
     required this.subtitle,
     required this.amber,
     required this.glass,
+    this.compact = false,
   });
   final String title;
   final String subtitle;
   final Color amber;
   final Color glass;
 
+  /// Im iPhone-Landscape rendert die Karte in einer Zeile (kein Subtitle,
+  /// kleineres Icon, geringere Polsterung), um vertikalen Platz zu sparen.
+  final bool compact;
+
   @override
   Widget build(BuildContext context) {
+    final iconSize = compact ? 32.0 : 44.0;
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+      padding: compact
+          ? const EdgeInsets.fromLTRB(12, 8, 12, 8)
+          : const EdgeInsets.fromLTRB(18, 18, 18, 18),
       decoration: BoxDecoration(
         color: glass.withAlpha(190),
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(compact ? 18 : 26),
         border: Border.all(color: Colors.white.withAlpha(18)),
         boxShadow: [
           BoxShadow(
@@ -201,13 +328,13 @@ class _IntroCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: iconSize,
+            height: iconSize,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [amber.withAlpha(220), const Color(0xFFE8C28A)],
               ),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(compact ? 10 : 14),
               boxShadow: [
                 BoxShadow(
                   color: amber.withAlpha(120),
@@ -216,32 +343,37 @@ class _IntroCard extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Icon(Icons.nightlight_round,
-                color: Color(0xFF3B2412), size: 24),
+            child: Icon(Icons.nightlight_round,
+                color: const Color(0xFF3B2412), size: compact ? 18 : 24),
           ),
-          const SizedBox(width: 14),
+          SizedBox(width: compact ? 10 : 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
+                    fontSize: compact ? 14 : 18,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.2,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: Colors.white.withAlpha(170),
-                    fontSize: 12.5,
-                    height: 1.3,
+                if (!compact) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.white.withAlpha(170),
+                      fontSize: 12.5,
+                      height: 1.3,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -1027,6 +1159,8 @@ class _StartButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final mq = MediaQuery.of(context);
+    final compact = mq.size.height < 500 && mq.size.width > mq.size.height;
     return ValueListenableBuilder<bool>(
       valueListenable: SleepMixer.I.running,
       builder: (_, running, __) {
@@ -1088,10 +1222,10 @@ class _StartButton extends StatelessWidget {
                       },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  height: 64,
+                  height: compact ? 52 : 64,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(colors: gradient),
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius: BorderRadius.circular(compact ? 18 : 22),
                     border: running
                         ? Border.all(
                             color: Colors.white.withAlpha(60),
@@ -1115,17 +1249,19 @@ class _StartButton extends StatelessWidget {
                               ? Icons.stop_circle_rounded
                               : Icons.play_arrow_rounded,
                           color: fg,
-                          size: running ? 28 : 26,
+                          size: compact ? 22 : (running ? 28 : 26),
                         ),
-                        const SizedBox(width: 10),
+                        SizedBox(width: compact ? 8 : 10),
                         Text(
                           label,
                           style: TextStyle(
                             color: fg,
-                            fontSize: 15.5,
+                            fontSize: compact ? 13.5 : 15.5,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.3,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
@@ -1183,5 +1319,230 @@ class _RemainingLine extends StatelessWidget {
     final m = d.inMinutes;
     final s = d.inSeconds % 60;
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+}
+
+// ── Presets ──────────────────────────────────────────────────────────────────
+
+/// Horizontal bar of saved sleep-mode mixes. Tap loads, long-press saves,
+/// "+" adds a new slot. The currently active set is highlighted in amber.
+class _PresetBar extends StatelessWidget {
+  const _PresetBar();
+
+  static const Color _glass = Color(0xFF1F1B36);
+
+  String _displayName(BuildContext context, SleepPreset p, int index) {
+    final defaults = {'set1': 1, 'set2': 2, 'set3': 3};
+    final n = defaults[p.id];
+    if (n != null) {
+      return AppLocalizations.of(context)!.sleepPresetDefault(n);
+    }
+    return p.name.isEmpty ? '#${index + 1}' : p.name;
+  }
+
+  Future<void> _confirmAndSave(
+      BuildContext context, String id, String displayName) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1F1B36),
+        title: Text(
+          l10n.sleepPresetSaveTitle,
+          style: const TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          l10n.sleepPresetSaveBody(displayName),
+          style: TextStyle(color: Colors.white.withAlpha(220)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              l10n.sleepPresetSaveCancel,
+              style: TextStyle(color: Colors.white.withAlpha(180)),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(
+              l10n.sleepPresetSaveConfirm,
+              style: const TextStyle(
+                color: Color(0xFFE8A65A),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await SleepPresetStore.I.saveCurrent(id);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.sleepPresetSaved),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        backgroundColor: _glass,
+      ),
+    );
+  }
+
+  Future<void> _add(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    final count = SleepPresetStore.I.presets.value.length + 1;
+    final name = l10n.sleepPresetDefault(count);
+    final id = await SleepPresetStore.I.addSlot(name: name);
+    await SleepPresetStore.I.saveCurrent(id, name: name);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.sleepPresetSaved),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+        backgroundColor: _glass,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return ValueListenableBuilder<List<SleepPreset>>(
+      valueListenable: SleepPresetStore.I.presets,
+      builder: (_, list, __) {
+        return ValueListenableBuilder<String?>(
+          valueListenable: SleepPresetStore.I.activeId,
+          builder: (_, activeId, __) {
+            return SizedBox(
+              height: 40,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                itemCount: list.length + 1,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (ctx, i) {
+                  if (i == list.length) {
+                    return _PresetAddChip(
+                      tooltip: l10n.sleepPresetAdd,
+                      onTap: () => _add(ctx),
+                    );
+                  }
+                  final preset = list[i];
+                  final name = _displayName(ctx, preset, i);
+                  return _PresetChip(
+                    label: name,
+                    active: preset.id == activeId,
+                    onTap: () => SleepPresetStore.I.apply(preset),
+                    onLongPress: () =>
+                        _confirmAndSave(ctx, preset.id, name),
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _PresetChip extends StatelessWidget {
+  const _PresetChip({
+    required this.label,
+    required this.active,
+    required this.onTap,
+    required this.onLongPress,
+  });
+
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  static const Color _amber = Color(0xFFE8A65A);
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 160),
+      decoration: BoxDecoration(
+        color: active
+            ? const Color(0xFF2A2347).withAlpha(230)
+            : const Color(0xFF1F1B36).withAlpha(180),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: active ? _amber.withAlpha(220) : Colors.white.withAlpha(18),
+          width: 1.2,
+        ),
+        boxShadow: active
+            ? [
+                BoxShadow(
+                  color: _amber.withAlpha(70),
+                  blurRadius: 14,
+                  spreadRadius: -3,
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          onLongPress: onLongPress,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Center(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: active ? Colors.white : Colors.white.withAlpha(220),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PresetAddChip extends StatelessWidget {
+  const _PresetAddChip({required this.tooltip, required this.onTap});
+  final String tooltip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: const Color(0xFF1F1B36).withAlpha(180),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Container(
+            width: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withAlpha(18), width: 1.2),
+            ),
+            child: Icon(
+              Icons.add_rounded,
+              color: Colors.white.withAlpha(200),
+              size: 18,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

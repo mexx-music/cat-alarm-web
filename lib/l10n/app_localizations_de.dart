@@ -229,4 +229,35 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get sleepNoChannelHint => 'Bitte mindestens einen Klang aktivieren';
+
+  @override
+  String get sleepPresetsTitle => 'Vorlagen';
+
+  @override
+  String get sleepPresetSave => 'Aktuelles Set speichern';
+
+  @override
+  String get sleepPresetSaved => 'Set gespeichert';
+
+  @override
+  String get sleepPresetAdd => 'Set hinzufügen';
+
+  @override
+  String get sleepPresetSaveTitle => 'Set speichern?';
+
+  @override
+  String sleepPresetSaveBody(String name) {
+    return '„$name“ mit der aktuellen Mischung überschreiben?';
+  }
+
+  @override
+  String get sleepPresetSaveConfirm => 'Speichern';
+
+  @override
+  String get sleepPresetSaveCancel => 'Abbrechen';
+
+  @override
+  String sleepPresetDefault(int n) {
+    return 'Set $n';
+  }
 }

@@ -546,6 +546,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please enable at least one sound'**
   String get sleepNoChannelHint;
+
+  /// No description provided for @sleepPresetsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Presets'**
+  String get sleepPresetsTitle;
+
+  /// No description provided for @sleepPresetSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save current set'**
+  String get sleepPresetSave;
+
+  /// No description provided for @sleepPresetSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Set saved'**
+  String get sleepPresetSaved;
+
+  /// No description provided for @sleepPresetAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add set'**
+  String get sleepPresetAdd;
+
+  /// No description provided for @sleepPresetSaveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Save set?'**
+  String get sleepPresetSaveTitle;
+
+  /// No description provided for @sleepPresetSaveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Overwrite \"{name}\" with the current mix?'**
+  String sleepPresetSaveBody(String name);
+
+  /// No description provided for @sleepPresetSaveConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get sleepPresetSaveConfirm;
+
+  /// No description provided for @sleepPresetSaveCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get sleepPresetSaveCancel;
+
+  /// No description provided for @sleepPresetDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Set {n}'**
+  String sleepPresetDefault(int n);
 }
 
 class _AppLocalizationsDelegate

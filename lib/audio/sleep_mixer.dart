@@ -1,35 +1,35 @@
 import 'dart:async';
 
 import 'package:audio_session/audio_session.dart';
+import 'package:audioplayers/audioplayers.dart' as ap;
 import 'package:flutter/foundation.dart';
-import 'package:just_audio/just_audio.dart' as ja;
 
-/// SleepMixer — direkte, robuste Audio-Steuerung ohne Operation-Queue.
+/// SleepMixer — basiert auf dem `audioplayers`-Package (statt just_audio),
+/// weil dessen native Loop-Implementation (`ReleaseMode.loop` → iOS
+/// `AVAudioPlayer.numberOfLoops = -1`) **wirklich gapless** ist. Mit
+/// `just_audio` + `LoopMode.one` knackt es auf iOS minimal am Loop-Punkt,
+/// weil der AVQueuePlayer das Item neu starten muss.
 ///
-/// Design-Regeln (nach mehreren Iterationen festgezurrt):
-/// - Keine globale Queue. Jede User-Aktion läuft direkt am Player. Nichts
-///   kann in einer Wartereihe hängen.
-/// - `_epoch` wird **ausschließlich** von `stopNow()` hochgezählt. Lange
-///   Operationen (Start-Prep, Fade-In, Auto-Fade-Out) prüfen das Epoch und
-///   räumen sich selbst auf, wenn dazwischen gestoppt wurde. Toggles und
-///   Slider-Bewegungen ändern das Epoch nicht — sie dürfen einen laufenden
-///   Start niemals abbrechen.
+/// Design-Regeln (übernommen aus der vorigen Implementation):
+/// - Keine globale Queue. Jede User-Aktion läuft direkt am Player.
+/// - `_epoch` wird ausschließlich von `stopNow()` hochgezählt. Lange
+///   Operationen (Start-Prep, Auto-Fade-Out) prüfen das Epoch und räumen
+///   sich selbst auf.
 /// - `_isStarting` verhindert parallele Start-Aufrufe und signalisiert
 ///   setEnabled, dass Channels, die _während_ Start aktiviert werden, vom
 ///   Start-Sweep nachgeladen werden.
-/// - Anti-Knack: ~200 ms Fade-In beim Hochfahren, ~150 ms Fade-Out beim
-///   Toggle-Off und Music-Track-Wechsel.
+/// - Anti-Knack: kurzer Fade-Out beim Toggle-Off und Music-Track-Wechsel.
 /// - Volume-Slider und Toggle laufen ohne `busy`-Marker → Button bleibt frei.
 class SleepMixer {
   static final SleepMixer I = SleepMixer._();
   SleepMixer._();
 
   // ── Player (immer derselbe Instance pro Channel) ──────────────────────────
-  final Map<SleepChannel, ja.AudioPlayer> _players = {
-    SleepChannel.purr: ja.AudioPlayer(),
-    SleepChannel.rain: ja.AudioPlayer(),
-    SleepChannel.ocean: ja.AudioPlayer(),
-    SleepChannel.music: ja.AudioPlayer(),
+  final Map<SleepChannel, ap.AudioPlayer> _players = {
+    SleepChannel.purr: ap.AudioPlayer(),
+    SleepChannel.rain: ap.AudioPlayer(),
+    SleepChannel.ocean: ap.AudioPlayer(),
+    SleepChannel.music: ap.AudioPlayer(),
   };
 
   // ── State (Single Source of Truth) ────────────────────────────────────────
@@ -61,8 +61,13 @@ class SleepMixer {
   bool _sessionConfigured = false;
   bool _isStarting = false;
 
-  /// Wird nur von `stopNow()` und `_stopAllImpl()` hochgezählt. Lange
-  /// Operationen prüfen das Epoch, um stop-during-prep zu erkennen.
+  /// Welche Channels gelten gerade als „aktiv spielend"? audioplayers gibt
+  /// uns leider keinen synchronen `playing`-Getter (nur einen Stream); wir
+  /// tracken den Zustand daher selbst.
+  final Set<SleepChannel> _playingChannels = <SleepChannel>{};
+
+  /// Wird nur von `stopNow()` hochgezählt. Lange Operationen prüfen das
+  /// Epoch, um stop-during-prep zu erkennen.
   int _epoch = 0;
 
   // ── Public API ────────────────────────────────────────────────────────────
@@ -73,7 +78,7 @@ class SleepMixer {
       oceanEnabled.value ||
       musicEnabled.value;
 
-  ja.AudioPlayer _playerFor(SleepChannel c) => _players[c]!;
+  ap.AudioPlayer _playerFor(SleepChannel c) => _players[c]!;
 
   ValueNotifier<bool> enabledNotifier(SleepChannel c) {
     switch (c) {
@@ -105,10 +110,13 @@ class SleepMixer {
   Future<void> init() async {
     if (_initialized) return;
     _initialized = true;
-    debugPrint('SleepMixer.init: setting LoopMode.one on all players');
+    debugPrint('SleepMixer.init: configuring audioplayers (loop release mode)');
     for (final p in _players.values) {
       try {
-        await p.setLoopMode(ja.LoopMode.one);
+        await p.setReleaseMode(ap.ReleaseMode.loop);
+      } catch (_) {}
+      try {
+        await p.setPlayerMode(ap.PlayerMode.mediaPlayer);
       } catch (_) {}
     }
     debugPrint('SleepMixer.init: done');
@@ -116,8 +124,7 @@ class SleepMixer {
 
   /// Startet den Mixer. Bereitet die initial aktivierten Channels parallel
   /// vor; macht danach einen Sweep, um Channels nachzuladen, die _während_
-  /// Start aktiviert wurden. `running` flippt erst, wenn alle Channels
-  /// fertig sind.
+  /// Start aktiviert wurden.
   Future<void> start() async {
     debugPrint(
         'SleepMixer.start: requested running=${running.value} starting=$_isStarting '
@@ -150,8 +157,7 @@ class SleepMixer {
       final planned = snapshot();
       debugPrint('SleepMixer.start: preparing batch $planned');
       await Future.wait(<Future<void>>[
-        for (final c in planned)
-          _prepareAndPlayChannel(c, myEpoch, fadeIn: true)
+        for (final c in planned) _prepareAndPlayChannel(c, myEpoch)
       ]);
       if (_epoch != myEpoch) return;
 
@@ -160,12 +166,11 @@ class SleepMixer {
       for (int sweep = 0; sweep < 2; sweep++) {
         final current = snapshot();
         final missing =
-            current.where((c) => !_players[c]!.playing).toList();
+            current.where((c) => !_playingChannels.contains(c)).toList();
         if (missing.isEmpty) break;
         debugPrint('SleepMixer.start: sweep $sweep, catching $missing');
         await Future.wait(<Future<void>>[
-          for (final c in missing)
-            _prepareAndPlayChannel(c, myEpoch, fadeIn: true)
+          for (final c in missing) _prepareAndPlayChannel(c, myEpoch)
         ]);
         if (_epoch != myEpoch) return;
       }
@@ -200,7 +205,7 @@ class SleepMixer {
     _endsAt = null;
     running.value = false;
     remaining.value = Duration.zero;
-    _isStarting = false; // Sweeps brechen via Epoch-Check ab
+    _isStarting = false;
     busy.value = true;
 
     try {
@@ -232,15 +237,13 @@ class SleepMixer {
 
     if (enabled) {
       if (_isStarting) {
-        // Start läuft gerade — der Sweep am Ende von start() holt den
-        // Channel auf. Nichts hier tun, damit wir nicht doppelt starten.
         debugPrint(
             'SleepMixer.setEnabled: deferred to start sweep ($c)');
         return;
       }
       await _ensureSession(activate: true);
       final myEpoch = _epoch;
-      await _prepareAndPlayChannel(c, myEpoch, fadeIn: true);
+      await _prepareAndPlayChannel(c, myEpoch);
       return;
     }
 
@@ -253,8 +256,6 @@ class SleepMixer {
       await _playerFor(c).setVolume(volumeNotifier(c).value);
     } catch (_) {}
 
-    // Wenn der Mixer wirklich läuft (nicht nur Start in Progress) und nichts
-    // mehr aktiv ist → kompletter Stop.
     if (running.value && !anyChannelEnabled) {
       debugPrint('SleepMixer.setEnabled: last channel off → stopNow');
       await stopNow();
@@ -285,7 +286,7 @@ class SleepMixer {
         SleepChannel.music, 0.0, const Duration(milliseconds: 150), myEpoch);
     await _hardStopDirect(SleepChannel.music);
     if (_epoch != myEpoch) return;
-    await _prepareAndPlayChannel(SleepChannel.music, myEpoch, fadeIn: true);
+    await _prepareAndPlayChannel(SleepChannel.music, myEpoch);
   }
 
   void selectTimer(SleepTimerOption opt) {
@@ -327,14 +328,16 @@ class SleepMixer {
     }
   }
 
+  /// audioplayers benutzt `AssetSource('sounds/foo.mp3')` — **ohne**
+  /// `assets/`-Prefix, da das Package automatisch im assets-Ordner sucht.
   String _assetFor(SleepChannel c) {
     switch (c) {
       case SleepChannel.purr:
-        return 'assets/sounds/sleep_purr.mp3';
+        return 'sounds/sleep_purr.mp3';
       case SleepChannel.rain:
-        return 'assets/sounds/sleep_rain.m4a';
+        return 'sounds/sleep_rain.m4a';
       case SleepChannel.ocean:
-        return 'assets/sounds/sleep_ocean.m4a';
+        return 'sounds/sleep_ocean.m4a';
       case SleepChannel.music:
         return _assetForMusic(selectedMusic.value);
     }
@@ -343,27 +346,18 @@ class SleepMixer {
   String _assetForMusic(MusicTrack t) {
     switch (t) {
       case MusicTrack.softAcoustic:
-        return 'assets/sounds/music_soft_acoustic.mp3';
+        return 'sounds/music_soft_acoustic.mp3';
       case MusicTrack.verySlow:
-        return 'assets/sounds/music_very_slow.mp3';
+        return 'sounds/music_very_slow.mp3';
       case MusicTrack.relaxing:
-        return 'assets/sounds/music_relaxing.mp3';
+        return 'sounds/music_relaxing.mp3';
       case MusicTrack.warmSauna:
-        return 'assets/sounds/music_warm_sauna.mp3';
+        return 'sounds/music_warm_sauna.mp3';
     }
   }
 
-  /// Bereitet einen Channel vor und startet ihn. Volume wird direkt auf den
-  /// Ziel-Wert gesetzt — kein Fade-In. (Der 200 ms Fade-In hat sich als
-  /// fragil erwiesen: setVolume-Calls während setAudioSource-Loading wurden
-  /// auf manchen Plattformen verschluckt; Folge: Channel spielte stumm.)
-  ///
-  /// Volume wird **zweimal** gesetzt — vor und nach setAudioSource — falls
-  /// just_audio die Lautstärke beim Quellen-Wechsel verwirft.
   Future<void> _prepareAndPlayChannel(
-      SleepChannel c, int myEpoch, {bool fadeIn = false}) async {
-    // ignore: avoid_unused_constructor_parameters
-    final _ = fadeIn; // beibehalten für Aufrufkompatibilität, aktuell ignoriert
+      SleepChannel c, int myEpoch) async {
     final p = _playerFor(c);
     final asset = _assetFor(c);
     final target = volumeNotifier(c).value;
@@ -371,15 +365,12 @@ class SleepMixer {
         'SleepMixer._prepare($c): asset=$asset targetVolume=$target');
 
     try {
-      await p.setLoopMode(ja.LoopMode.off);
-    } catch (_) {}
-    if (_epoch != myEpoch) return;
-    try {
       await p.stop();
     } catch (_) {}
     if (_epoch != myEpoch) return;
+
     try {
-      await p.seek(Duration.zero);
+      await p.setReleaseMode(ap.ReleaseMode.loop);
     } catch (_) {}
     if (_epoch != myEpoch) return;
 
@@ -389,46 +380,24 @@ class SleepMixer {
     if (_epoch != myEpoch) return;
 
     try {
-      await p.setAudioSource(ja.AudioSource.asset(asset));
-    } catch (e) {
-      debugPrint('SleepMixer._prepare($c): setAudioSource error $e');
-      return;
-    }
-    if (_epoch != myEpoch) {
-      await _hardStopDirect(c);
-      return;
-    }
-
-    // Volume nach setAudioSource erneut setzen — manche Backends resetten
-    // beim Quellen-Wechsel.
-    try {
-      await p.setVolume(target);
-    } catch (_) {}
-
-    try {
-      await p.setLoopMode(ja.LoopMode.one);
-    } catch (_) {}
-    if (_epoch != myEpoch) {
-      await _hardStopDirect(c);
-      return;
-    }
-
-    try {
-      // Bewusst NICHT awaiten: just_audio's play() Future resolved erst,
-      // wenn die Wiedergabe endet (bei LoopMode.one nie). Wir wollen nur
-      // die Wiedergabe starten und sofort weitermachen.
-      unawaited(p.play());
+      // play() startet sofort und loopt durch `ReleaseMode.loop`.
+      await p.play(ap.AssetSource(asset), volume: target);
     } catch (e) {
       debugPrint('SleepMixer._prepare($c): play error $e');
       return;
     }
+    if (_epoch != myEpoch) {
+      await _hardStopDirect(c);
+      return;
+    }
 
-    // Volume noch einmal nach play() — manchmal landet das Set-Vor-Play
-    // im Limbo, bis der Player tatsächlich aktiv ist.
+    // Volume nach play() noch einmal setzen, falls play() den Volume-Param
+    // bei manchen Plattformen verwirft.
     try {
       await p.setVolume(target);
     } catch (_) {}
 
+    _playingChannels.add(c);
     debugPrint('SleepMixer._prepare($c): playing at $target');
   }
 
@@ -452,20 +421,12 @@ class SleepMixer {
     debugPrint('SleepMixer.hardStop: ${c.name}');
     final p = _playerFor(c);
     try {
-      await p.setLoopMode(ja.LoopMode.off);
-    } catch (_) {}
-    try {
-      await p.pause();
-    } catch (_) {}
-    try {
       await p.stop();
-    } catch (_) {}
-    try {
-      await p.seek(Duration.zero);
     } catch (_) {}
     try {
       await p.setVolume(0);
     } catch (_) {}
+    _playingChannels.remove(c);
   }
 
   /// Auto-Fade-Out (Timer-Ende, Alarm). Bricht via Epoch ab, wenn manuell

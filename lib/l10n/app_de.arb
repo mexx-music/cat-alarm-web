@@ -74,6 +74,25 @@
   "sleepUnlimited": "läuft bis Stopp",
   "sleepActive": "● Sleep läuft",
   "sleepNoChannelHint": "Bitte mindestens einen Klang aktivieren",
+  "sleepPresetsTitle": "Vorlagen",
+  "sleepPresetSave": "Aktuelles Set speichern",
+  "sleepPresetSaved": "Set gespeichert",
+  "sleepPresetAdd": "Set hinzufügen",
+  "sleepPresetSaveTitle": "Set speichern?",
+  "sleepPresetSaveBody": "„{name}“ mit der aktuellen Mischung überschreiben?",
+  "@sleepPresetSaveBody": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "sleepPresetSaveConfirm": "Speichern",
+  "sleepPresetSaveCancel": "Abbrechen",
+  "sleepPresetDefault": "Set {n}",
+  "@sleepPresetDefault": {
+    "placeholders": {
+      "n": { "type": "int" }
+    }
+  },
   "@appTitle": {
     "description": "App title shown in the app bar"
   },
