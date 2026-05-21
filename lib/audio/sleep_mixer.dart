@@ -61,6 +61,30 @@ class SleepMixer {
   bool _sessionConfigured = false;
   bool _isStarting = false;
 
+  /// Geteilter AudioContext, der gleichzeitiges Mixen mehrerer Player auf
+  /// Android erlaubt. Schlüssel-Setting: `audioFocus: AndroidAudioFocus.none`.
+  /// audioplayers fordert sonst pro Player AudioFocus.gain an — und sobald
+  /// ein neuer Player Focus zieht, stoppen die anderen. Die App-Ebene
+  /// (audio_session) übernimmt den globalen Focus gegenüber anderen Apps;
+  /// unsere Player innerhalb dieser App brauchen darum keinen eigenen Focus.
+  /// iOS: `playback` + `mixWithOthers` → mehrere Player innerhalb der App
+  /// können parallel laufen, ohne dass einer den anderen unterbricht.
+  static final ap.AudioContext _mixingContext = ap.AudioContext(
+    android: const ap.AudioContextAndroid(
+      isSpeakerphoneOn: false,
+      stayAwake: true,
+      contentType: ap.AndroidContentType.music,
+      usageType: ap.AndroidUsageType.media,
+      audioFocus: ap.AndroidAudioFocus.none,
+    ),
+    iOS: ap.AudioContextIOS(
+      category: ap.AVAudioSessionCategory.playback,
+      options: const {
+        ap.AVAudioSessionOptions.mixWithOthers,
+      },
+    ),
+  );
+
   /// Welche Channels gelten gerade als „aktiv spielend"? audioplayers gibt
   /// uns leider keinen synchronen `playing`-Getter (nur einen Stream); wir
   /// tracken den Zustand daher selbst.
@@ -111,12 +135,29 @@ class SleepMixer {
     if (_initialized) return;
     _initialized = true;
     debugPrint('SleepMixer.init: configuring audioplayers (loop release mode)');
+
+    // Globaler Default für künftig erzeugte Player.
+    try {
+      await ap.AudioPlayer.global.setAudioContext(_mixingContext);
+    } catch (e) {
+      debugPrint('SleepMixer.init: global setAudioContext error: $e');
+    }
+
     for (final p in _players.values) {
-      try {
-        await p.setReleaseMode(ap.ReleaseMode.loop);
-      } catch (_) {}
+      // PlayerMode.mediaPlayer: nutzt MediaPlayer/ExoPlayer (statt SoundPool),
+      // unterstützt langes Streaming und ReleaseMode.loop sauber.
       try {
         await p.setPlayerMode(ap.PlayerMode.mediaPlayer);
+      } catch (_) {}
+      // Pro-Player AudioContext: kein eigener Focus-Request → mehrere Player
+      // können auf Android parallel laufen.
+      try {
+        await p.setAudioContext(_mixingContext);
+      } catch (e) {
+        debugPrint('SleepMixer.init: setAudioContext error: $e');
+      }
+      try {
+        await p.setReleaseMode(ap.ReleaseMode.loop);
       } catch (_) {}
     }
     debugPrint('SleepMixer.init: done');
@@ -366,6 +407,14 @@ class SleepMixer {
 
     try {
       await p.stop();
+    } catch (_) {}
+    if (_epoch != myEpoch) return;
+
+    // AudioContext erneut anwenden — falls eine vorherige Aktion den Context
+    // implizit zurückgesetzt hat, würden wir sonst auf Android wieder
+    // exklusiven Focus anfordern und die anderen Channels killen.
+    try {
+      await p.setAudioContext(_mixingContext);
     } catch (_) {}
     if (_epoch != myEpoch) return;
 
