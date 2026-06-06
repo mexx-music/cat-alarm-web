@@ -4,10 +4,10 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:screen_brightness/screen_brightness.dart';
 
 /// WakelockManager: aktiviert WakelockPlus während [active] true ist.
-/// Während aktiv wird das Display sofort auf [dimLevel] gedimmt (Default 0.06,
-/// nachttauglich, Uhr/Controls bleiben lesbar). Beim Deaktivieren wird die
-/// vorher gemessene Helligkeit wiederhergestellt. [autoDimAfter] kann optional
-/// eine Verzögerung erzwingen; null bedeutet sofortiges Dimmen.
+/// Beim Aktivieren wird nach [autoDimAfter] auf [dimLevel] gedimmt
+/// (null = sofort). Der Timer läuft einmal und wird nicht durch Rebuilds
+/// zurückgesetzt. Beim Deaktivieren wird die ursprüngliche Helligkeit
+/// wiederhergestellt.
 class WakelockManager extends StatefulWidget {
   final bool active;
 
@@ -98,19 +98,17 @@ class _WakelockManagerState extends State<WakelockManager> {
 
   Future<void> _update(bool enable) async {
     try {
-      // Cancel any pending auto-dim timer when toggling
-      _autoDimTimer?.cancel();
-      _autoDimTimer = null;
-
       if (enable && !_isEnabled) {
+        // Transition inactive → active: start fresh.
+        _autoDimTimer?.cancel();
+        _autoDimTimer = null;
+
         await WakelockPlus.enable();
         _isEnabled = true;
         debugPrint('WakelockManager: enabled');
 
-        // Remember the current brightness so we can restore it on exit.
         await _ensurePreviousBrightness();
 
-        // Dim immediately unless an explicit delay was requested.
         if (widget.autoDimAfter == null) {
           await _applyDim(widget.dimLevel);
         } else {
@@ -122,31 +120,27 @@ class _WakelockManagerState extends State<WakelockManager> {
               'WakelockManager: auto-dim scheduled in ${widget.autoDimAfter!.inSeconds}s');
         }
       } else if (!enable && _isEnabled) {
-        // disable wakelock
+        // Transition active → inactive.
+        _autoDimTimer?.cancel();
+        _autoDimTimer = null;
+
         await WakelockPlus.disable();
         _isEnabled = false;
         debugPrint('WakelockManager: disabled');
 
-        // Cancel timer
-        _autoDimTimer?.cancel();
-        _autoDimTimer = null;
-
-        // Restore brightness if we modified it
         await _restoreBrightness(reason: 'from alarm');
       } else if (enable && _isEnabled) {
-        // already enabled, but dim level or timer may have changed
-        _autoDimTimer?.cancel();
-        _autoDimTimer = null;
+        // Already active, dim params changed (e.g. night-mode kick-in).
+        // autoDimAfter == null → apply dim immediately (night-mode / ringing).
+        // autoDimAfter != null → a delay timer is already running; leave it alone.
         if (widget.autoDimAfter == null) {
+          _autoDimTimer?.cancel();
+          _autoDimTimer = null;
           await _applyDim(widget.dimLevel);
-        } else {
-          _autoDimTimer = Timer(widget.autoDimAfter!, () async {
-            if (!mounted || !_isEnabled) return;
-            await _applyDim(widget.dimLevel);
-          });
           debugPrint(
-              'WakelockManager: auto-dim rescheduled in ${widget.autoDimAfter!.inSeconds}s');
+              'WakelockManager: immediate dim applied (level=${widget.dimLevel})');
         }
+        // else: running timer continues undisturbed.
       }
     } catch (e) {
       debugPrint(

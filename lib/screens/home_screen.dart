@@ -282,17 +282,17 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
               double dim;
               Duration? autoDimAfter;
               if (ringing) {
-                dim = tablet ? 0.85 : 0.06;
+                dim = 0.85;
                 autoDimAfter = null;
               } else if (_nightMode) {
                 dim = tablet ? 0.04 : 0.02;
                 autoDimAfter = null;
               } else if (tablet) {
-                dim = 0.35;
+                dim = 0.45;
                 autoDimAfter = const Duration(minutes: 4);
               } else {
-                dim = 0.06;
-                autoDimAfter = null;
+                dim = 0.50;
+                autoDimAfter = const Duration(seconds: 60);
               }
 
               return WakelockManager(
