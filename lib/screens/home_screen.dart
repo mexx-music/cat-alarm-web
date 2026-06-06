@@ -299,6 +299,9 @@ class _CatAlarmScreenState extends State<CatAlarmScreen> {
                 active: _armed || _isTesting || ringing,
                 dimLevel: dim,
                 autoDimAfter: autoDimAfter,
+                // Nur der Alarm darf den Screen aktiv aufhellen. Armed-/
+                // Night-Dim darf nie heller als die Originalhelligkeit werden.
+                allowBrighten: ringing,
               );
             },
           ),

@@ -17,11 +17,18 @@ class WakelockManager extends StatefulWidget {
   /// Wartezeit bis automatisch gedimmt wird. Wenn null -> sofort dimmen.
   final Duration? autoDimAfter;
 
+  /// Wenn false (Default), darf [dimLevel] die Helligkeit NIE über die
+  /// ursprüngliche Gerätehelligkeit hinaus anheben (Armed-/Night-Dim dimmt
+  /// nur nach unten). Nur wenn true (z. B. Alarm klingelt) darf aktiv
+  /// aufgehellt werden.
+  final bool allowBrighten;
+
   const WakelockManager({
     Key? key,
     required this.active,
     this.dimLevel = 0.06,
     this.autoDimAfter,
+    this.allowBrighten = false,
   }) : super(key: key);
 
   @override
@@ -68,8 +75,19 @@ class _WakelockManagerState extends State<WakelockManager> {
     if (!_brightnessSupported) return;
     try {
       if (!mounted) return;
-      await ScreenBrightness().setScreenBrightness(level);
-      debugPrint('Brightness: dimmed (level=$level)');
+      var target = level;
+      // Dimmen darf nie aufhellen: Ziel auf Originalhelligkeit begrenzen,
+      // außer der Aufruf erlaubt aktives Aufhellen (Alarm).
+      if (!widget.allowBrighten) {
+        await _ensurePreviousBrightness();
+        final original = _previousBrightness;
+        if (original != null && target > original) {
+          target = original;
+        }
+      }
+      await ScreenBrightness().setScreenBrightness(target);
+      debugPrint(
+          'Brightness: dimmed (requested=$level, applied=$target, allowBrighten=${widget.allowBrighten})');
     } catch (e) {
       debugPrint('WakelockManager: failed to set dim level $level: $e');
     }
